@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Deploy state (resource ids + origin secret) and build output
+infra/aws/state.json
+infra/aws/build/
+.env
+.vercel
+
+# Deck build output and local tooling
+deck/out/
+deck/.venv/
+deck/lo_profile/
+
+# demo video build output
+video/.cache/
+video/out/
+
+# demo video music, downloaded on first use (see video/audio.mjs)
+video/assets/music/*.mp3
+.env*
+!.env.example
+
+# scratch folder of the report-picture generator
+infra/ai/fixtures/.work/

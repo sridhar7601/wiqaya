@@ -1,0 +1,202 @@
+{
+  "r01": {
+    "layout": "who6",
+    "condition": "clean",
+    "case": "normal",
+    "expect": {
+      "volume_ml": 3.2,
+      "concentration": 62,
+      "total_motility": 58,
+      "progressive": 46,
+      "morphology": 6
+    }
+  },
+  "r02": {
+    "layout": "who6",
+    "condition": "photo",
+    "case": "lowCount",
+    "expect": {
+      "volume_ml": 2.8,
+      "concentration": 11,
+      "total_motility": 44,
+      "progressive": 34,
+      "morphology": 5
+    }
+  },
+  "r03": {
+    "layout": "who6",
+    "condition": "dim",
+    "case": "allLow",
+    "expect": {
+      "volume_ml": 1.9,
+      "concentration": 6.5,
+      "total_motility": 19,
+      "progressive": 12,
+      "morphology": 1
+    }
+  },
+  "r04": {
+    "layout": "grades",
+    "condition": "clean",
+    "case": "lowMotility",
+    "expect": {
+      "volume_ml": 2.4,
+      "concentration": 37,
+      "total_motility": 27,
+      "progressive": 18,
+      "morphology": 4
+    }
+  },
+  "r05": {
+    "layout": "grades",
+    "condition": "photo",
+    "case": "lowForms",
+    "expect": {
+      "volume_ml": 4.1,
+      "concentration": 44,
+      "total_motility": 49,
+      "progressive": 38,
+      "morphology": 2
+    }
+  },
+  "r06": {
+    "layout": "grades",
+    "condition": "dim",
+    "case": "lowVolume",
+    "expect": {
+      "volume_ml": 0.8,
+      "concentration": 29,
+      "total_motility": 47,
+      "progressive": 33,
+      "morphology": 5
+    }
+  },
+  "r07": {
+    "layout": "bilingual",
+    "condition": "clean",
+    "case": "noSperm",
+    "expect": {
+      "volume_ml": 2.6,
+      "concentration": 0
+    }
+  },
+  "r08": {
+    "layout": "bilingual",
+    "condition": "photo",
+    "case": "normal",
+    "expect": {
+      "volume_ml": 3.2,
+      "concentration": 62,
+      "total_motility": 58,
+      "progressive": 46,
+      "morphology": 6
+    }
+  },
+  "r09": {
+    "layout": "bilingual",
+    "condition": "dim",
+    "case": "lowCount",
+    "expect": {
+      "volume_ml": 2.8,
+      "concentration": 11,
+      "total_motility": 44,
+      "progressive": 34,
+      "morphology": 5
+    }
+  },
+  "r10": {
+    "layout": "casa",
+    "condition": "clean",
+    "case": "onTheLimit",
+    "expect": {
+      "volume_ml": 1.4,
+      "concentration": 16,
+      "total_motility": 42,
+      "progressive": 30,
+      "morphology": 4
+    }
+  },
+  "r11": {
+    "layout": "casa",
+    "condition": "photo",
+    "case": "allLow",
+    "expect": {
+      "volume_ml": 1.9,
+      "concentration": 6.5,
+      "total_motility": 19,
+      "progressive": 12,
+      "morphology": 1
+    }
+  },
+  "r12": {
+    "layout": "arabic",
+    "condition": "clean",
+    "case": "lowMotility",
+    "expect": {
+      "volume_ml": 2.4,
+      "concentration": 37,
+      "total_motility": 27,
+      "progressive": 18,
+      "morphology": 4
+    }
+  },
+  "r13": {
+    "layout": "arabic",
+    "condition": "photo",
+    "case": "lowForms",
+    "expect": {
+      "volume_ml": 4.1,
+      "concentration": 44,
+      "total_motility": 49,
+      "progressive": 38,
+      "morphology": 2
+    }
+  },
+  "r14": {
+    "layout": "who6",
+    "condition": "rough",
+    "case": "lowMotility",
+    "expect": {
+      "volume_ml": 2.4,
+      "concentration": 37,
+      "total_motility": 27,
+      "progressive": 18,
+      "morphology": 4
+    }
+  },
+  "r15": {
+    "layout": "grades",
+    "condition": "rough",
+    "case": "allLow",
+    "expect": {
+      "volume_ml": 1.9,
+      "concentration": 6.5,
+      "total_motility": 19,
+      "progressive": 12,
+      "morphology": 1
+    }
+  },
+  "r16": {
+    "layout": "who6",
+    "condition": "photo",
+    "case": "lowForms",
+    "expect": {
+      "volume_ml": 4.1,
+      "total_motility": 49,
+      "progressive": 38,
+      "morphology": 2
+    }
+  },
+  "r17": {
+    "layout": "bloodCount",
+    "condition": "clean",
+    "case": "normal",
+    "expect": null
+  },
+  "r18": {
+    "layout": "note",
+    "condition": "photo",
+    "case": "normal",
+    "expect": null
+  }
+}

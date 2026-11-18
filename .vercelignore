@@ -1,0 +1,7 @@
+# Not part of the deployed app: the submission deck, the demo-video tooling and the AWS scripts.
+deck
+video
+infra/aws
+dist
+infra/ai/fixtures/reports
+.env*

@@ -1,0 +1,12 @@
+Third-party sound used in the demo video
+
+Music (video/assets/music, downloaded on first use by video/audio.mjs)
+  "Inbound" and "A New Year" by Scott Buckley, released under CC-BY 4.0. www.scottbuckley.com.au
+  Licence terms: https://www.scottbuckley.com.au/library/using-this-music/
+  The credit line must appear in the YouTube description; video/render.mjs writes it into youtube.txt.
+
+Interface sounds (video/assets/sfx/tap.wav, click.wav)
+  Generated with ElevenLabs sound effects, then trimmed to a single hit.
+
+Narration
+  ElevenLabs text to speech (see video/narration.mjs for the voice and model).

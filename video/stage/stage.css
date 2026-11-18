@@ -1,0 +1,102 @@
+@font-face { font-family: Plex; src: url(/fonts/plex/ibm-plex-sans-latin-400-normal.woff2) format('woff2'); font-weight: 400; }
+@font-face { font-family: Plex; src: url(/fonts/plex/ibm-plex-sans-latin-500-normal.woff2) format('woff2'); font-weight: 500; }
+@font-face { font-family: Plex; src: url(/fonts/plex/ibm-plex-sans-latin-600-normal.woff2) format('woff2'); font-weight: 600; }
+@font-face { font-family: Plex; src: url(/fonts/plex/ibm-plex-sans-latin-700-normal.woff2) format('woff2'); font-weight: 700; }
+@font-face { font-family: PlexAr; src: url(/fonts/plex-ar/ibm-plex-sans-arabic-arabic-600-normal.woff2) format('woff2'); font-weight: 600; }
+
+:root {
+  --teal-950: #062724; --teal-900: #0a3834; --teal-800: #0e4c46; --teal-600: #18766b; --teal-200: #a6d1c9;
+  --gold-300: #e2c98a; --gold-100: #f4ead0;
+  --white-90: rgba(255, 255, 255, 0.9); --white-70: rgba(255, 255, 255, 0.7); --white-55: rgba(255, 255, 255, 0.55);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--teal-950); }
+body { font-family: Plex, PlexAr, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+#bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(1100px 760px at 74% 46%, rgba(43, 138, 126, 0.32), transparent 70%),
+    radial-gradient(900px 700px at 8% 100%, rgba(226, 201, 138, 0.07), transparent 70%),
+    linear-gradient(160deg, #0b3f3a 0%, #072c29 55%, #052220 100%);
+}
+.ar { font-family: PlexAr, sans-serif; }
+
+/* ---------- Title and end cards ---------- */
+.card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; visibility: hidden; }
+.card .mark svg { width: 128px; height: 128px; display: block; filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.35)); }
+.card h1 { margin-top: 34px; font-size: 108px; line-height: 1; font-weight: 600; letter-spacing: -0.035em; }
+.card h1 .ar { margin-inline-start: 26px; font-size: 84px; font-weight: 600; letter-spacing: 0; color: var(--gold-300); }
+.card .tag { margin-top: 26px; font-size: 36px; font-weight: 400; color: var(--white-90); letter-spacing: -0.01em; }
+.card .meta { position: absolute; bottom: 70px; font-size: 21px; color: var(--white-55); letter-spacing: 0.01em; }
+.card .meta i { font-style: normal; margin: 0 12px; color: rgba(255, 255, 255, 0.3); }
+#end .path { margin-top: 64px; }
+#end .path .k { font-size: 19px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-300); }
+#end .chips { margin-top: 20px; display: flex; align-items: center; gap: 16px; }
+#end .chips span { font-size: 24px; font-weight: 500; padding: 12px 22px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); border: 1.5px solid rgba(255, 255, 255, 0.16); color: var(--white-90); }
+#end .chips b { font-weight: 400; font-size: 26px; color: rgba(255, 255, 255, 0.4); }
+#end .cta { margin-top: 56px; font-size: 26px; font-weight: 500; color: #fff; padding: 14px 30px; border-radius: 14px; background: var(--teal-600); }
+
+/* ---------- Caption column ---------- */
+#caption { position: absolute; left: 150px; top: 0; bottom: 0; width: 840px; opacity: 0; }
+#caption .brand { position: absolute; top: 66px; left: 0; display: flex; align-items: center; gap: 14px; }
+#caption .brand svg { width: 44px; height: 44px; }
+#caption .brand span { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+#caption .brand em { font-style: normal; font-size: 18px; color: var(--white-55); padding-inline-start: 14px; border-inline-start: 1.5px solid rgba(255, 255, 255, 0.2); }
+#cap { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); }
+#cap .ln { opacity: 0; }
+#cap .eyebrow { font-size: 20px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold-300); }
+#cap .eyebrow b { color: #fff; font-weight: 600; }
+#cap .title { margin-top: 20px; font-size: 62px; line-height: 1.08; font-weight: 600; letter-spacing: -0.025em; text-wrap: balance; }
+#cap .pt { margin-top: 22px; display: flex; gap: 18px; align-items: baseline; font-size: 29px; line-height: 1.3; color: var(--white-90); }
+#cap .title + .pt { margin-top: 44px; }
+#cap .pt::before { content: ''; flex: none; width: 11px; height: 11px; border-radius: 3px; background: var(--teal-200); transform: translateY(-5px); }
+#cap .stat { margin-top: 18px; display: flex; flex-direction: column; }
+#cap .title + .stat { margin-top: 36px; }
+#cap .stat b { font-size: 44px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; color: #fff; font-variant-numeric: tabular-nums; }
+#cap .stat span { font-size: 20px; color: var(--white-70); margin-top: 2px; }
+#chapters { position: absolute; left: 0; bottom: 74px; display: flex; gap: 8px; }
+#chapters i { width: 44px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); }
+#chapters i.done { background: rgba(255, 255, 255, 0.5); }
+#chapters i.on { background: var(--gold-300); }
+
+body.desk #caption { left: 72px; width: 350px; }
+body.desk #cap .title { font-size: 42px; line-height: 1.12; }
+body.desk #cap .pt { font-size: 22px; gap: 14px; margin-top: 18px; }
+body.desk #cap .title + .pt { margin-top: 32px; }
+body.desk #cap .pt::before { width: 9px; height: 9px; transform: translateY(-3px); }
+body.desk #chapters i { width: 32px; }
+
+/* ---------- Phone ---------- */
+#phone {
+  position: absolute; left: 1160px; top: 53px; width: 465px; height: 974px; padding: 14px;
+  border-radius: 62px; background: #0b0f14; opacity: 0; visibility: hidden;
+  box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.6), 0 0 0 1.5px rgba(255, 255, 255, 0.08) inset, 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+#phone .screen { position: relative; width: 437px; height: 946px; border-radius: 48px; overflow: hidden; background: #f7f8f8; }
+#pf { display: block; width: 390px; height: 844px; border: 0; transform: scale(1.12); transform-origin: 0 0; }
+
+/* ---------- Desktop browser ---------- */
+#desk {
+  position: absolute; left: 474px; top: 64px; width: 1374px; height: 952px; border-radius: 14px; overflow: hidden;
+  background: #fff; opacity: 0; visibility: hidden;
+  box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+#desk .bar { height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 18px; background: #eef1f4; border-bottom: 1px solid #dde2e8; }
+#desk .bar i { width: 12px; height: 12px; border-radius: 50%; background: #cfd5dd; }
+#desk .bar span { margin-left: 22px; min-width: 560px; padding: 5px 16px; border-radius: 8px; background: #fff; border: 1px solid #dde2e8; font-size: 14px; color: #475467; }
+#desk .view { position: relative; width: 1374px; height: 908px; overflow: hidden; background: #f7f8f8; }
+#df { display: block; width: 1180px; height: 780px; border: 0; transform: scale(1.16441); transform-origin: 0 0; }
+
+.veil { position: absolute; inset: 0; background: #f7f8f8; opacity: 0; pointer-events: none; }
+
+/* ---------- Overlays ---------- */
+#hl { position: absolute; left: 0; top: 0; border-radius: 12px; opacity: 0; pointer-events: none; box-shadow: 0 0 0 3px var(--gold-300), 0 0 0 11px rgba(226, 201, 138, 0.3); }
+#touch {
+  position: absolute; left: 0; top: 0; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; opacity: 0; pointer-events: none;
+  background: rgba(14, 76, 70, 0.22); border: 2px solid rgba(14, 76, 70, 0.6); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+#touch .r { position: absolute; inset: -4px; border-radius: 50%; border: 2.5px solid rgba(14, 76, 70, 0.55); opacity: 0; }
+#cursor { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3)); }
+#fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+#preview { display: none; position: absolute; right: 24px; bottom: 20px; padding: 7px 14px; border-radius: 8px; background: #b42318; color: #fff; font: 600 17px/1.2 Plex, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; pointer-events: none; }
