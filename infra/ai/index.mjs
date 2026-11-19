@@ -14,8 +14,16 @@
  *   AZURE_OPENAI_API_VERSION  default 2024-10-21; use "v1" for the newer /openai/v1 API
  * Both:
  *   AI_REASONING_EFFORT       only for reasoning models (gpt-5 family), e.g. "low" (AZURE_OPENAI_REASONING_EFFORT also works)
+ * Env (Google Vertex AI, used when a service-account key is set and OPENAI_API_KEY is not):
+ *   GCP_SERVICE_ACCOUNT_JSON  the key file's contents (for Vercel), or
+ *   GOOGLE_APPLICATION_CREDENTIALS  a path to the key file (local); keep it outside the repo
+ *   VERTEX_MODEL              default google/gemini-3-flash-preview
+ *   GOOGLE_CLOUD_PROJECT      default: the key's project_id
+ *   GOOGLE_CLOUD_LOCATION     default global
  *   ORIGIN_SECRET             optional; when set, requests must carry x-origin-secret (CloudFront adds it)
  */
+import { createSign } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 
 const LEVELS = new Set(['selfcare', 'primary', 'fertility', 'specialist', 'urgent'])
 const MAX_BODY = 12_000
@@ -223,17 +231,70 @@ export function checkPrep(raw) {
   return { opening, questions, guardrail: dropped ? 'trimmed' : 'pass' }
 }
 
+const vertexConfigured = () => !!(process.env.GCP_SERVICE_ACCOUNT_JSON || process.env.GOOGLE_APPLICATION_CREDENTIALS)
 const provider = () =>
-  process.env.OPENAI_API_KEY ? 'openai' : process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_DEPLOYMENT && process.env.AZURE_OPENAI_API_KEY ? 'azure' : null
+  process.env.OPENAI_API_KEY
+    ? 'openai'
+    : vertexConfigured()
+      ? 'vertex'
+      : process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_DEPLOYMENT && process.env.AZURE_OPENAI_API_KEY
+        ? 'azure'
+        : null
 
 /** True when an AI provider is configured. Shared with the report reader (report.mjs). */
 export const aiConfigured = () => provider() !== null
 
-/** The model in use, as reported on the Evidence page ("openai:gpt-4.1", "azure:<deployment>"). */
-export const modelName = () => (provider() === 'openai' ? `openai:${process.env.OPENAI_MODEL || 'gpt-4.1'}` : provider() === 'azure' ? `azure:${process.env.AZURE_OPENAI_DEPLOYMENT}` : 'none')
+const vertexModel = () => process.env.VERTEX_MODEL || 'google/gemini-3-flash-preview'
+
+/** The model in use, as reported on the Evidence page ("openai:gpt-4.1", "azure:<deployment>", "vertex:google/gemini-3-flash-preview"). */
+export const modelName = () => {
+  const p = provider()
+  return p === 'openai' ? `openai:${process.env.OPENAI_MODEL || 'gpt-4.1'}` : p === 'azure' ? `azure:${process.env.AZURE_OPENAI_DEPLOYMENT}` : p === 'vertex' ? `vertex:${vertexModel()}` : 'none'
+}
+
+/**
+ * Vertex AI signs in with a Google service-account key: the key signs a short JWT, which Google exchanges for a
+ * one-hour access token. The token is cached in memory and renewed five minutes before it expires.
+ */
+let vertexToken = { value: '', exp: 0 }
+let vertexAccount = null
+function serviceAccount() {
+  if (vertexAccount) return vertexAccount
+  const raw = process.env.GCP_SERVICE_ACCOUNT_JSON || readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8')
+  vertexAccount = JSON.parse(raw)
+  return vertexAccount
+}
+async function vertexAccessToken() {
+  if (vertexToken.value && Date.now() < vertexToken.exp - 5 * 60_000) return vertexToken.value
+  const sa = serviceAccount()
+  const b64u = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
+  const now = Math.floor(Date.now() / 1000)
+  const tokenUri = sa.token_uri || 'https://oauth2.googleapis.com/token'
+  const unsigned = `${b64u({ alg: 'RS256', typ: 'JWT' })}.${b64u({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/cloud-platform', aud: tokenUri, iat: now, exp: now + 3600 })}`
+  const assertion = `${unsigned}.${createSign('RSA-SHA256').update(unsigned).sign(sa.private_key, 'base64url')}`
+  const res = await fetch(tokenUri, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion }),
+  })
+  const data = await res.json()
+  if (!res.ok || !data.access_token) throw new Error('vertex_auth')
+  vertexToken = { value: data.access_token, exp: Date.now() + (data.expires_in || 3600) * 1000 }
+  return vertexToken.value
+}
 
 /** Where a chat-completions request goes, and how it is authenticated. */
-function target() {
+async function target() {
+  if (provider() === 'vertex') {
+    const project = process.env.GOOGLE_CLOUD_PROJECT || serviceAccount().project_id
+    const location = process.env.GOOGLE_CLOUD_LOCATION || 'global'
+    const host = location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`
+    return {
+      url: `https://${host}/v1/projects/${encodeURIComponent(project)}/locations/${encodeURIComponent(location)}/endpoints/openapi/chat/completions`,
+      headers: { authorization: `Bearer ${await vertexAccessToken()}` },
+      model: vertexModel(),
+    }
+  }
   if (provider() === 'openai') {
     const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '')
     return { url: `${base}/chat/completions`, headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, model: process.env.OPENAI_MODEL || 'gpt-4.1' }
@@ -252,11 +313,21 @@ function target() {
 
 /** `extra` is merged into the request (e.g. response_format for the report reader). */
 export async function callModel(messages, extra = {}, timeoutMs = 20_000) {
-  const { url, headers, model } = target()
-  const effort = process.env.AI_REASONING_EFFORT || process.env.AZURE_OPENAI_REASONING_EFFORT
+  let url, headers, model
+  try {
+    ;({ url, headers, model } = await target())
+  } catch {
+    // The service-account key could not be read or exchanged for a token.
+    return { ok: false, status: 502 }
+  }
+  // Gemini 3 always thinks before answering, and the thinking counts against max_completion_tokens: keep it low
+  // and give it its own headroom, or answers are cut off mid-sentence and JSON arrives incomplete.
+  const vertex = provider() === 'vertex'
+  const effort = process.env.AI_REASONING_EFFORT || process.env.AZURE_OPENAI_REASONING_EFFORT || (vertex ? 'low' : '')
   const send = async (withTemperature) => {
     // Generous cap: reasoning models spend part of it thinking. The prompt keeps the visible answer short.
     const payload = { messages, max_completion_tokens: 1500, ...extra }
+    if (vertex) payload.max_completion_tokens += 2000
     if (model) payload.model = model
     if (effort) payload.reasoning_effort = effort
     if (effort || !withTemperature) delete payload.temperature
