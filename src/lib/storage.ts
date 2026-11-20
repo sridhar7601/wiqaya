@@ -17,7 +17,7 @@ import { b64u, randomBytes, unb64u } from './crypto'
  */
 const BASE = 'wiqaya.'
 /** Interface preferences and the lock itself stay outside the vault, so the lock screen shows in the right language. */
-const GLOBAL_KEYS = new Set(['lang', 'discreet', 'vault', 'vaultFails'])
+const GLOBAL_KEYS = new Set(['lang', 'discreet', 'vault', 'vaultFails', 'tour'])
 const PROFILE_KEY = 'wiqaya.profile' // sessionStorage: which example is open in this tab
 const VAULT_ITERATIONS = 600_000
 const VAULT_AAD = new TextEncoder().encode('wiqaya-vault-v1')

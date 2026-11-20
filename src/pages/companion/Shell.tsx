@@ -65,6 +65,7 @@ export function CompanionShell({ title, intro, action, wide, children }: { title
 
       {/* Phones and tablets: a floating tab bar within thumb reach. Wide screens use the switcher in the header. */}
       <nav
+        data-tour="tabs"
         className="fixed inset-x-3 bottom-3 z-20 mx-auto max-w-md rounded-2xl border border-line bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-xl backdrop-blur lg:hidden"
         aria-label={t({ en: 'Companion', ar: 'الرفيق' })}
       >

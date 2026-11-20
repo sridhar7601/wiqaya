@@ -56,12 +56,14 @@ export function WhatShapes(p: ShapesInput) {
   const unknown = limits(p)
   const [tab, setTab] = useState<Tab>(can.length ? 'can' : 'unknown')
 
-  const TABS: { id: Tab; icon: typeof Lock; label: L10n; n: number }[] = [
+  const ALL_TABS: { id: Tab; icon: typeof Lock; label: L10n; n: number }[] = [
     { id: 'can', icon: Sprout, label: { en: 'Can change', ar: 'يمكن تغييره' }, n: can.length },
     { id: 'cannot', icon: Lock, label: { en: 'Cannot change', ar: 'لا يمكن تغييره' }, n: cannot.length + (age !== undefined ? 1 : 0) },
     { id: 'unknown', icon: CircleHelp, label: { en: 'Not known yet', ar: 'غير معروف بعد' }, n: unknown.length },
     { id: 'evidence', icon: Library, label: { en: 'Evidence', ar: 'الأدلة' }, n: sources.length },
   ]
+  // An empty tab is one more thing to click for nothing.
+  const TABS = ALL_TABS.filter((x) => x.n > 0)
   const rows = (items: string[], empty: L10n) =>
     items.length ? (
       <ul className="stagger space-y-2">

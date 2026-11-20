@@ -1,9 +1,11 @@
-import { ArrowRight, BookOpen, Check, HeartHandshake, Languages, LockKeyhole, MessageCircleHeart, Route, ScanLine, ShieldCheck, Smartphone, Sparkles, Stethoscope, TrendingUp } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, Compass, HeartHandshake, Languages, LockKeyhole, MessageCircleHeart, Route, ScanLine, ShieldCheck, Smartphone, Sparkles, Stethoscope, TrendingUp } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router'
 import { CountUp, Reveal } from '../components/motion'
+import { startTour, Tour } from '../components/Tour'
+import type { TourStep } from '../components/Tour'
 import { LayerLabel, LevelIcon, LevelPill } from '../components/ui'
 import { CASES } from '../eval/cases'
 import { PERSONAS } from '../lib/companion/personas'
@@ -16,6 +18,13 @@ import type { Answers, L10n, Level } from '../lib/types'
 import { EXAMPLES } from './Example'
 
 const delay = (s: number) => ({ '--d': `${s}s` }) as CSSProperties
+
+const HOME_TOUR: TourStep[] = [
+  { target: 'start', title: { en: 'Start here', ar: 'البداية من هنا' }, body: { en: 'A private 5-minute check. No account and no name.', ar: 'فحص خاص في خمس دقائق، دون حساب ودون اسم.' } },
+  { target: 'preview', title: { en: 'What you get', ar: 'النتيجة' }, body: { en: 'One next step, with the reason behind it. No score. Switch between a woman’s and a man’s result.', ar: 'خطوة تالية واحدة مع سببها، بلا درجات. يمكن التبديل بين نتيجة امرأة ونتيجة رجل.' } },
+  { target: 'people', title: { en: 'Just looking?', ar: 'للاستكشاف فقط؟' }, body: { en: 'Open an invented person’s plan to see months of history. Your own data is never touched.', ar: 'خطة شخص مختلق فيها أشهر من السجل، ولا تُمسّ بياناتك.' } },
+  { target: 'lang', title: { en: 'عربي or English', ar: 'عربي أو English' }, body: { en: 'Switch language at any time.', ar: 'يمكن تغيير اللغة في أي وقت.' } },
+]
 
 export default function Home() {
   const { t } = useI18n()
@@ -38,7 +47,7 @@ export default function Home() {
             <p className="lead max-w-lg">
               {t({ en: 'A private 5-minute check, then a simple plan that follows you over time. No score. No judgement.', ar: 'فحص خاص في خمس دقائق، ثم خطة بسيطة ترافقك مع الوقت. بلا درجات وبلا أحكام.' })}
             </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div data-tour="start" className="flex flex-col gap-3 sm:flex-row">
               <Link to="/check" className="btn btn-primary btn-lg">
                 {t({ en: 'Start the check', ar: 'ابدأ الفحص' })}
                 <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
@@ -59,6 +68,10 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+            <button type="button" onClick={startTour} className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline">
+              <Compass className="h-4 w-4" aria-hidden />
+              {t({ en: 'New here? Take the 20-second tour', ar: 'زيارة أولى؟ جولة في 20 ثانية' })}
+            </button>
           </div>
           <Preview />
         </div>
@@ -139,7 +152,7 @@ export default function Home() {
       </section>
 
       {/* ---------- Example people: a shelf ---------- */}
-      <section className="container-app pt-16 sm:pt-24">
+      <section data-tour="people" className="container-app pt-16 sm:pt-24">
         <Reveal className="max-w-2xl space-y-3">
           <p className="eyebrow">{t({ en: 'Change over time', ar: 'التغيّر مع الوقت' })}</p>
           <h2 className="title">{t({ en: 'Open someone’s plan.', ar: 'افتح خطة أحدهم.' })}</h2>
@@ -217,6 +230,7 @@ export default function Home() {
           </div>
         </Reveal>
       </section>
+      <Tour id="home" steps={HOME_TOUR} />
     </>
   )
 }
@@ -299,7 +313,7 @@ function Preview() {
   const p = PREVIEW[who]
   const max = Math.max(...p.values, p.band[1]) * 1.08
   return (
-    <div className="anim-pop relative mx-auto w-full max-w-md lg:max-w-none" style={delay(0.2)}>
+    <div data-tour="preview" className="anim-pop relative mx-auto w-full max-w-md lg:max-w-none" style={delay(0.2)}>
       <div className="mb-4 flex justify-center">
         <div className="inline-flex rounded-full bg-white p-1 shadow-sm ring-1 ring-line" role="group" aria-label={t({ en: 'Example to preview', ar: 'المثال المعروض' })}>
           {(['female', 'male'] as const).map((w) => (

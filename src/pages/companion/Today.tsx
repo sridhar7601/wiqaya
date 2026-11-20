@@ -20,7 +20,16 @@ import { useI18n } from '../../lib/i18n'
 import { stepFor } from '../../lib/services'
 import type { L10n } from '../../lib/types'
 import { LEVEL_RANK } from '../../lib/types'
+import { Tour } from '../../components/Tour'
+import type { TourStep } from '../../components/Tour'
 import { CompanionShell } from './Shell'
+
+const TODAY_TOUR: TourStep[] = [
+  { target: 'next', title: { en: 'Your next step', ar: 'خطوتك التالية' }, body: { en: 'What to do now, and any appointment waiting for a reply.', ar: 'ما يجب فعله الآن، وأي موعد ينتظر رداً.' } },
+  { target: 'trends', title: { en: 'Change over time', ar: 'التغيّر مع الوقت' }, body: { en: 'What the rules notice across months of cycles, results and habits.', ar: 'ما تلاحظه القواعد عبر أشهر من الدورة والنتائج والعادات.' } },
+  { target: 'week', title: { en: '20 seconds a week', ar: '20 ثانية أسبوعياً' }, body: { en: 'A short check-in keeps the picture current.', ar: 'تسجيل قصير يُبقي الصورة محدّثة.' } },
+  { target: 'tabs', title: { en: 'Everything else', ar: 'بقية الأقسام' }, body: { en: 'Journey for appointments, Results for tests, Habits for daily life, Privacy for your data.', ar: '«الرحلة» للمواعيد، و«النتائج» للتحاليل، و«العادات» للحياة اليومية، و«الخصوصية» لبياناتك.' } },
+]
 
 export default function Today() {
   const { t, lang } = useI18n()
@@ -48,10 +57,11 @@ export default function Today() {
       title={t({ en: 'Today', ar: 'اليوم' })}
       intro={<span>{fmtDay(c.today, lang)}</span>}
     >
+      <Tour id="today" steps={TODAY_TOUR} />
       {/* Phone: one column in reading order. Wide screens: the plan on the left, this week's numbers on the right. */}
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start">
         <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-6">
-          <div className="order-1 empty:hidden">
+          <div data-tour="next" className="order-1 empty:hidden">
       {/* ---------- Next step ---------- */}
       {v.emergency ? (
         <section className="surface overflow-hidden border-red-300">
@@ -133,7 +143,7 @@ export default function Today() {
       )}
 
           </div>
-          <div className="order-5 empty:hidden">
+          <div data-tour="trends" className="order-5 empty:hidden">
       {/* ---------- Findings over time ---------- */}
       {newer.length > 0 && (
         <section className="space-y-3">
@@ -249,7 +259,7 @@ export default function Today() {
       </section>
 
           </div>
-          <div className="order-3">
+          <div data-tour="week" className="order-3">
       {/* ---------- This week ---------- */}
       <section className="surface surface-pad flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch">
         <div className="flex items-start gap-3">

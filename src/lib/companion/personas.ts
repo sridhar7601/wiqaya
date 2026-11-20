@@ -467,7 +467,9 @@ function mariam(T: Day): Record<string, unknown> {
     checkins,
     signals: [],
     work,
-    replies: [{ reply: r1, receivedAt: iso(d(-45), '12:00') }],
+    // She already accepted the doctor's offer (it is the booked preservation call above), so the stored reply
+    // carries no open offer: otherwise the same call would show a second time as "appointment offered".
+    replies: [{ reply: { ...r1, offer: undefined }, receivedAt: iso(d(-45), '12:00') }],
     journey,
     metrics: { started: 1, completed: 1, durationsSec: [281], trust: [5], clarity: [5] },
     surveyDone: true,

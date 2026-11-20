@@ -6,6 +6,8 @@ import { AI_PROVIDER, askAi } from '../lib/ai'
 import type { AiProblem, AiResult } from '../lib/ai'
 import { AiProblemNote, AiText } from '../components/AiAnswer'
 import { PageNav } from '../components/PageNav'
+import { Tour } from '../components/Tour'
+import type { TourStep } from '../components/Tour'
 import type { PageNavItem } from '../components/PageNav'
 import { WhatShapes } from '../components/WhatShapes'
 import { assess, num } from '../lib/engine'
@@ -22,6 +24,14 @@ import { bumpMetrics, EMPTY_METRICS, load, save, useStored, wipeAll } from '../l
 import type { Consent, Metrics } from '../lib/storage'
 import type { Answers, Assessment, FiredFlag } from '../lib/types'
 import { exampleAnswers } from './Example'
+
+const RESULT_TOUR: TourStep[] = [
+  { target: 'step', title: { en: 'This is your next step', ar: 'هذه خطوتك التالية' }, body: { en: 'One clear action, chosen by fixed clinical rules. It is screening, not a diagnosis.', ar: 'إجراء واحد واضح تختاره قواعد سريرية ثابتة. هذا فحص أولي وليس تشخيصاً.' } },
+  { target: 'found', title: { en: 'Why this step', ar: 'سبب هذه الخطوة' }, body: { en: 'Open any finding to see your answer, the rule behind it and its source.', ar: 'في كل نتيجة: إجابتك، والقاعدة، ومصدرها.' } },
+  { target: 'ai', title: { en: 'Want it in plain words?', ar: 'شرح بكلمات بسيطة' }, body: { en: 'The AI helper is optional. It only explains, and it cannot change your step.', ar: 'المساعد الذكي اختياري. يشرح فقط، ولا يستطيع تغيير خطوتك.' } },
+  { target: 'share', title: { en: 'Send it to your doctor', ar: 'للمشاركة مع الطبيب' }, body: { en: 'A private link or QR code. You choose what goes in, and you can withdraw it.', ar: 'رابط خاص أو رمز QR. المحتوى باختيارك، ويمكن سحبه في أي وقت.' } },
+  { target: 'plan', title: { en: 'Keep going', ar: 'للمتابعة' }, body: { en: 'Turn this result into a plan that follows your cycles, results and habits over time.', ar: 'خطة تتابع الدورة والنتائج والعادات مع الوقت.' } },
+]
 
 const RESULT_NAV: PageNavItem[] = [
   { id: 'step', label: { en: 'Your next step', ar: 'خطوتك التالية' }, icon: Route },
@@ -136,7 +146,7 @@ export default function Result() {
           <SummaryFooter version={as.engineVersion} />
         </section>
       ) : (
-        <section className="surface overflow-hidden">
+        <section data-tour="step" className="surface overflow-hidden">
           <div className="space-y-5 p-6 sm:p-8">
             <div className="flex items-start gap-4">
               <LevelIcon level={as.level} size="lg" />
@@ -165,7 +175,7 @@ export default function Result() {
       {!example && <SharedSummary />}
 
       {!example && !as.emergency && (
-        <section className="surface flex flex-col gap-4 overflow-hidden border-brand-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <section data-tour="plan" className="surface flex flex-col gap-4 overflow-hidden border-brand-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="space-y-1">
             <p className="eyebrow">{t({ en: 'What happens next', ar: 'ماذا بعد' })}</p>
             <h2 className="text-lg font-semibold text-ink">{t({ en: 'Turn this result into a 90-day plan', ar: 'حوّل هذه النتيجة إلى خطة لتسعين يوماً' })}</h2>
@@ -233,7 +243,7 @@ export default function Result() {
       )}
 
       {/* ---------- Findings ---------- */}
-      <section id="found" className="scroll-mt-24 space-y-3">
+      <section id="found" data-tour="found" className="scroll-mt-24 space-y-3">
         <div className="flex items-end justify-between gap-3">
           <h2 className="heading">{t({ en: 'What we found', ar: 'ما وجدناه' })}</h2>
           <span className="text-sm text-muted tabular-nums">
@@ -290,10 +300,12 @@ export default function Result() {
 
       {/* ---------- Side column on wide screens; continues below on a phone ---------- */}
       <aside className="mt-8 flex flex-col gap-6 lg:mt-0">
-      <AiPanel as={as} />
+      <div data-tour="ai">
+        <AiPanel as={as} />
+      </div>
 
       {/* ---------- Share ---------- */}
-      <section className="surface surface-pad space-y-4">
+      <section data-tour="share" className="surface surface-pad space-y-4">
         <div className="space-y-1">
           <h2 className="heading">{t({ en: 'Share it, or keep it private', ar: 'شاركها أو احتفظ بها لنفسك' })}</h2>
           <p className="text-sm text-muted">
@@ -350,6 +362,7 @@ export default function Result() {
         </button>
       </div>
       <PageNav className="sticky top-24 hidden lg:block" items={RESULT_NAV} />
+      <Tour id="result" steps={RESULT_TOUR} />
       </aside>
     </div>
   )

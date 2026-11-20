@@ -1,7 +1,8 @@
-import { ArrowRight, Eye, EyeOff, Menu, X } from 'lucide-react'
+import { ArrowRight, CircleHelp, Eye, EyeOff, Menu, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router'
 import { VaultGate } from './components/LockScreen'
+import { startTour, TOUR_PATHS } from './components/Tour'
 import { LogoMark } from './components/ui'
 import { PERSONAS } from './lib/companion/personas'
 import { APP_NAME, useI18n } from './lib/i18n'
@@ -58,6 +59,7 @@ export default function App() {
   const example = activeExample()
   const persona = PERSONAS.find((p) => p.id === example)
   const [menu, setMenu] = useState(false)
+  const hasTour = TOUR_PATHS.has(pathname)
   // The menu closes whenever the page changes.
   useEffect(() => setMenu(false), [pathname])
 
@@ -73,7 +75,7 @@ export default function App() {
 
           {/* One bar, one switcher: the plan's tabs inside the plan, the site's pages everywhere else. */}
           {!inFlow && (
-            <nav className="mx-auto hidden items-center gap-0.5 rounded-full bg-canvas p-1 ring-1 ring-inset ring-line lg:flex" aria-label={t({ en: 'Main', ar: 'الرئيسية' })}>
+            <nav data-tour={inCompanion ? 'tabs' : undefined} className="mx-auto hidden items-center gap-0.5 rounded-full bg-canvas p-1 ring-1 ring-inset ring-line lg:flex" aria-label={t({ en: 'Main', ar: 'الرئيسية' })}>
               {inCompanion
                 ? TABS.map((tab) => (
                     <NavLink key={tab.to} to={tab.to} end={tab.end} className={pill}>
@@ -110,6 +112,17 @@ export default function App() {
               </button>
             )}
             {inCompanion && <QuickExit />}
+            {hasTour && (
+              <button
+                type="button"
+                onClick={startTour}
+                className="hidden h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-canvas hover:text-ink sm:inline-flex"
+                title={t({ en: 'Show me around this page', ar: 'جولة في هذه الصفحة' })}
+                aria-label={t({ en: 'Show me around this page', ar: 'جولة في هذه الصفحة' })}
+              >
+                <CircleHelp className="h-[18px] w-[18px]" aria-hidden />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setDiscreet(!discreet)}
@@ -120,7 +133,7 @@ export default function App() {
             >
               {discreet ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
             </button>
-            <div className="inline-flex h-9 items-center rounded-full bg-canvas p-0.5 ring-1 ring-inset ring-line" role="group" aria-label={t({ en: 'Language', ar: 'اللغة' })}>
+            <div data-tour="lang" className="inline-flex h-9 items-center rounded-full bg-canvas p-0.5 ring-1 ring-inset ring-line" role="group" aria-label={t({ en: 'Language', ar: 'اللغة' })}>
               {(['en', 'ar'] as const).map((l) => (
                 <button
                   key={l}
@@ -164,6 +177,19 @@ export default function App() {
                     <ArrowRight className="icon-dir h-4 w-4 text-faint" aria-hidden />
                   </NavLink>
                 ))}
+                {hasTour && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenu(false)
+                      window.setTimeout(startTour, 250)
+                    }}
+                    className="flex items-center justify-between rounded-xl px-4 py-3 text-base font-semibold text-ink hover:bg-canvas"
+                  >
+                    {t({ en: 'Show me around', ar: 'جولة في الصفحة' })}
+                    <CircleHelp className="h-4 w-4 text-faint" aria-hidden />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setDiscreet(!discreet)}

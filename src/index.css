@@ -242,9 +242,11 @@ details > summary::-webkit-details-marker {
   }
 }
 
-/* A page fades and rises in when the route changes. */
+/* A page fades in when the route changes. Opacity only: a transform here, even a finished one that still
+   fills, would become the containing block of every position:fixed child (the phone tab bar would then sit
+   at the end of the page instead of floating). */
 .page-enter {
-  animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: fade 0.35s ease-out both;
 }
 .anim-rise {
   animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
