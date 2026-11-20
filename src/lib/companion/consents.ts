@@ -24,30 +24,40 @@ export interface ScopeInfo {
   to: L10n
 }
 
+/**
+ * What the AI service does with a request. Our own server keeps nothing. The AI provider does not train on
+ * the request, but by its published terms it may hold it for a short time (a cache of up to a day, and
+ * misuse checks), so the consent text says so instead of "does not keep it".
+ */
+const AI_KEEPS: L10n = {
+  en: 'Our AI service. It does not train on it, and may hold it for a short time to run the service and prevent misuse',
+  ar: 'خدمة الذكاء الاصطناعي لدينا. لا تتدرّب عليه، وقد تحتفظ به لفترة قصيرة لتشغيل الخدمة ومنع إساءة الاستخدام',
+}
+
 export const SCOPES: ScopeInfo[] = [
   {
     scope: 'ai_explain',
     title: { en: 'AI explanation of my result', ar: 'شرح نتيجتي بالذكاء الاصطناعي' },
-    sends: { en: 'The titles of what was found and your next step. Never your answers.', ar: 'عناوين ما تم العثور عليه وخطوتك التالية، ولا تُرسل إجاباتك أبداً.' },
-    to: { en: 'Our AI service, which does not keep it', ar: 'خدمة الذكاء الاصطناعي لدينا، ولا تحتفظ به' },
+    sends: { en: 'The titles of what was found, your next step, and whether this is a woman’s or a man’s check. Never your other answers.', ar: 'عناوين ما تم العثور عليه وخطوتك التالية، وهل الفحص لامرأة أم لرجل. لا تُرسل إجاباتك الأخرى أبداً.' },
+    to: { en: AI_KEEPS.en, ar: AI_KEEPS.ar },
   },
   {
     scope: 'ai_report',
     title: { en: 'AI reading of my lab report photo', ar: 'قراءة صورة تقرير المختبر بالذكاء الاصطناعي' },
     sends: { en: 'Only the part of the picture inside the frame you set.', ar: 'جزء الصورة الموجود داخل الإطار الذي تحدده فقط.' },
-    to: { en: 'Our AI service, which does not keep it', ar: 'خدمة الذكاء الاصطناعي لدينا، ولا تحتفظ به' },
+    to: { en: AI_KEEPS.en, ar: AI_KEEPS.ar },
   },
   {
     scope: 'ai_ask',
     title: { en: 'AI answers and visit preparation', ar: 'إجابات الذكاء الاصطناعي والاستعداد للزيارة' },
-    sends: { en: 'Your question, the titles of your findings and next step, and the notes of ours that match your question. Never your answers.', ar: 'سؤالك وعناوين ما وُجد وخطوتك التالية، وملاحظاتنا التي تطابق سؤالك، ولا تُرسل إجاباتك أبداً.' },
-    to: { en: 'Our AI service, which does not keep it', ar: 'خدمة الذكاء الاصطناعي لدينا، ولا تحتفظ به' },
+    sends: { en: 'Your question, the titles of your findings and next step, whether this is a woman’s or a man’s check, and the notes of ours that match your question. Never your other answers.', ar: 'سؤالك وعناوين ما وُجد وخطوتك التالية، وهل الفحص لامرأة أم لرجل، وملاحظاتنا التي تطابق سؤالك. لا تُرسل إجاباتك الأخرى أبداً.' },
+    to: { en: AI_KEEPS.en, ar: AI_KEEPS.ar },
   },
   {
     scope: 'ai_search',
     title: { en: 'AI care search', ar: 'البحث عن الرعاية بالذكاء الاصطناعي' },
     sends: { en: 'Only the words you type in the search box, such as “male doctor in Al Ain”.', ar: 'الكلمات التي تكتبها في مربع البحث فقط، مثل «طبيب رجل في العين».' },
-    to: { en: 'Our AI service, which does not keep it', ar: 'خدمة الذكاء الاصطناعي لدينا، ولا تحتفظ به' },
+    to: { en: AI_KEEPS.en, ar: AI_KEEPS.ar },
   },
   {
     scope: 'weather',

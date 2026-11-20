@@ -45,17 +45,28 @@ const EMERGENCY_RE = [
 // Output guardrails: no diagnosis claims, no dosing.
 // Diagnosis phrases are allowed when negated in the same sentence ("this does not mean you are infertile").
 const DIAGNOSIS_RE = [
-  /\b(you are|you['’]re) (infertile|sterile)\b/gi,
-  /\byou (definitely |probably |clearly )?(have|are suffering from) (a |an )?(varicocele|cancer|torsion|infertility|azoospermia|hypogonadism|low testosterone|an? (sexually transmitted )?infection)\b/gi,
-  /(أنت|انت) (عقيم|مصاب ب)/g,
-  /لديك (سرطان|دوالي|عقم|التواء|انعدام)/g,
+  /\b(you are|you['’]re) (infertile|sterile|menopausal|in (early |premature )?menopause)\b/gi,
+  /\byou (definitely |probably |clearly )?(have|are suffering from) (a |an )?(varicocele|cancer|torsion|infertility|azoospermia|hypogonadism|low testosterone|an? (sexually transmitted )?infection|pcos|polycystic ovar(y|ian) syndrome|endometriosis|fibroids|premature ovarian insufficiency|early menopause|ectopic pregnancy|pelvic inflammatory disease|low (ovarian|egg) reserve)\b/gi,
+  // The pronoun may carry a kasra when a woman is addressed (أنتِ، لديكِ).
+  /(أنت|انت)\u0650? (عقيم|مصاب ب|مصابة ب)/g,
+  /لديك\u0650? (سرطان|دوالي|عقم|التواء|انعدام|تكيس|متلازمة تكيس|بطانة الرحم المهاجرة|انتباذ|حمل خارج الرحم|قصور المبيض|قصور في المبيض|فشل المبيض|أورام ليفية|التهاب الحوض)/g,
 ]
-// Doses are never allowed, negated or not.
-const DOSE_RE = [/\b\d+(\.\d+)?\s?(mg|mcg|µg|iu)\b/i, /\d+\s?(ملغ|مجم|ميكروغرام)/]
+// Doses: digits (Western or Arabic-Indic) followed by a dose unit, abbreviated or spelled out.
+// A unit per volume ("10 IU/L", "126 mg/dL") is a lab value, not a dose, and is left alone.
+const DOSE_RE = /([\d٠-٩]+(?:[.,٫][\d٠-٩]+)?)\s?(mg|milligrams?|mcg|µg|μg|micrograms?|iu|ملغ|مجم|ملليغرام|مليغرام|ميكروغرام|مكغ)(?![a-z])(?!\s?\/\s?(?:d?l|ml)\b)/gi
+const UNIT = { mg: 'mg', milligram: 'mg', milligrams: 'mg', ملغ: 'mg', مجم: 'mg', ملليغرام: 'mg', مليغرام: 'mg', mcg: 'mcg', µg: 'mcg', μg: 'mcg', microgram: 'mcg', micrograms: 'mcg', ميكروغرام: 'mcg', مكغ: 'mcg', iu: 'iu' }
+const toNumber = (s) => Number(s.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[,٫]/, '.'))
+const doses = (text) => [...String(text).matchAll(DOSE_RE)].map((m) => `${toNumber(m[1])} ${UNIT[m[2].toLowerCase()] ?? m[2]}`)
 const NEGATION_BEFORE = /(\bnot\b|\bnever\b|\bno\b|n['’]t\b|\bunlikely\b|لا|ليس|ليست|لن)[^.!?؟\n]{0,30}$/i
 
-export function violates(text) {
-  if (DOSE_RE.some((r) => r.test(text))) return true
+/**
+ * True when the text states a diagnosis or a dose. `quoted` is the reviewed text the model was given (rule
+ * texts and notes): a dose printed there, such as the standard folic acid supplement, may be repeated exactly.
+ * Any other dose is refused, negated or not.
+ */
+export function violates(text, quoted = '') {
+  const allowed = new Set(doses(quoted))
+  if (doses(text).some((d) => !allowed.has(d))) return true
   for (const re of DIAGNOSIS_RE) {
     for (const m of text.matchAll(re)) {
       const before = text.slice(Math.max(0, m.index - 40), m.index)
@@ -72,19 +83,40 @@ const SAFE_FALLBACK = {
 const EMERGENCY_LINE = {
   en: 'This needs emergency care now: call 998 or go to the nearest emergency department.',
   ar: 'هذه حالة تحتاج إلى رعاية طارئة الآن: اتصل بالرقم 998 أو توجّه إلى أقرب قسم طوارئ.',
+  ar_f: 'هذه حالة تحتاج إلى رعاية طارئة الآن: اتصلي بالرقم 998 أو توجّهي إلى أقرب قسم طوارئ.',
+}
+const emergencyLine = (lang, sex) => (lang === 'ar' && sex === 'female' ? EMERGENCY_LINE.ar_f : EMERGENCY_LINE[lang])
+
+/** Who the reply is for. The app sends only "female" or "male"; anything else means a man's check, as in the app. */
+// The note about Arabic forms is added only to Arabic requests: seen in an English request, it made the model
+// answer in Arabic now and then.
+const WHO = {
+  female: 'The person using it is a woman.',
+  male: 'The person using it is a man.',
+}
+const WHO_AR = {
+  female: ' Use feminine forms, both when addressing her (for example "راجعي", "يمكنكِ") and when writing words for her to say.',
+  male: ' Use masculine forms, both when addressing him and when writing words for him to say.',
+}
+const who = (sex, lang) => WHO[sex] + (lang === 'ar' ? WHO_AR[sex] : '')
+const WARNING_SIGNS = {
+  female: 'severe one-sided lower tummy pain or fainting with a late or missed period, very heavy bleeding, pelvic pain with fever',
+  male: 'fever with a swollen testicle, heavy bleeding',
 }
 
-const SYSTEM = (lang) => `You are the plain-language helper inside "Wiqaya", a men's reproductive and preventive health screening app used in Abu Dhabi, UAE.
+const SYSTEM = (lang, sex = 'male') => `You are the plain-language helper inside "Wiqaya", a reproductive and preventive health screening app for women and men, used in Abu Dhabi, UAE.
+${who(sex, lang)}
 You receive a screening result that fixed clinical rules have ALREADY decided, and sometimes a general question from the user.
 Follow these rules strictly:
 - Never diagnose. Never say the person has, or does not have, a condition. Use words like "can", "may", "worth checking".
 - Never change, soften or contradict the suggested next step or its urgency. State it accurately.
-- If the result is an emergency, or the question describes sudden severe pain, fever with a swollen testicle, heavy bleeding, chest pain or thoughts of self-harm, first tell them to call 998 or go to the nearest emergency department now.
-- No medicine doses. Never tell anyone to start or stop a prescribed medicine.
+- If the result is an emergency, or the question describes sudden severe pain, ${WARNING_SIGNS[sex]}, chest pain or thoughts of self-harm, first tell them to call 998 or go to the nearest emergency department now.
+- Never give false reassurance. Do not tell the person they have plenty of time, that it is safe to delay, or that any result guarantees a pregnancy. Never predict whether or when a pregnancy will happen: no test, including AMH or a semen analysis, can promise that. A normal result is not a guarantee and a low one is not a verdict.
+- No medicine doses, with one exception: a dose printed word for word in the findings or reviewed notes you were given (for example the standard folic acid supplement) may be repeated exactly. Never tell anyone to start or stop a prescribed medicine.
 - Respect religious, social and cultural sensitivities. Do not assume marital status, family plans or sexual behaviour. No blame, no stigma. Warm, discreet, plain words.
-- Use only the facts provided plus widely accepted general health information. If the question is outside men's reproductive or preventive health, or you are unsure, say so briefly and suggest their family doctor.
+- Use only the facts provided plus widely accepted general health information. If the question is outside reproductive or preventive health, or you are unsure, say so briefly and suggest their family doctor.
 - Do not ask for or repeat personal details.
-- Reply in ${lang === 'ar' ? 'simple Modern Standard Arabic' : 'plain English'}. At most 120 words. Short paragraphs or up to 4 bullet points. No headings, no tables.`
+- Reply only in ${lang === 'ar' ? 'simple Modern Standard Arabic' : 'plain English'}, whatever language the question or the notes are in. At most 120 words. Short paragraphs or up to 4 bullet points. No headings, no tables.`
 
 function resp(statusCode, body, extra = {}) {
   return {
@@ -123,6 +155,8 @@ function validate(body) {
   const mode = MODES.has(body.mode) ? body.mode : 'explain'
   const r = body.result
   if (!r || typeof r !== 'object' || !LEVELS.has(r.level)) return null
+  // Only "female" or "male" is read; a missing value means a man's check, as in the app (sexOf in src/lib/types.ts).
+  const sex = r.sex === 'female' ? 'female' : 'male'
   const flags = Array.isArray(r.flags)
     ? r.flags.slice(0, 40).map((f) => ({ title: str(f?.title, 200), why: str(f?.why, 700), action: str(f?.action, 400), info: !!f?.info }))
     : []
@@ -144,7 +178,7 @@ function validate(body) {
           questions: Array.isArray(body.questions) ? body.questions.slice(0, 3).map((q) => str(q, 200).trim()).filter(Boolean) : [],
         }
       : null
-  return { lang, mode, question, notes, decidedBy, prep, result: { level: r.level, emergency: !!r.emergency, step: str(r.step, 200), flags } }
+  return { lang, mode, sex, question, notes, decidedBy, prep, result: { level: r.level, emergency: !!r.emergency, step: str(r.step, 200), flags } }
 }
 
 function userMessage({ mode, question, notes = [], decidedBy = 'rules', prep, result }) {
@@ -177,20 +211,24 @@ function userMessage({ mode, question, notes = [], decidedBy = 'rules', prep, re
   return lines.join('\n')
 }
 
+/** The reviewed text the model was given: rule texts and notes. A dose may be repeated only from here. */
+const quotable = (req) => [...req.result.flags.flatMap((f) => [f.why, f.action]), ...(req.notes ?? []).map((n) => n.a)].join('\n')
+
 /** Grounded answers: the model may use only the numbered notes, and must cite them. */
-const GROUNDED = (lang) => `${SYSTEM(lang)}
+const GROUNDED = (lang, sex = 'male') => `${SYSTEM(lang, sex)}
 For this question you are given numbered reviewed notes, written by the team from clinical guidelines.
 - Use only the reviewed notes and the findings. Do not add other medical facts, numbers or advice.
 - After each sentence that uses a note, put its number in square brackets, like [1] or [2].
 - If the notes do not answer the question, reply with exactly NO_NOTE and nothing else.`
 
 /** Visit preparation: what to say first and what to ask. Fixed JSON shape, checked by code. */
-const PREP = (lang) => `You help a man prepare for a health visit booked through "Wiqaya", a men's reproductive and preventive health app in Abu Dhabi, UAE.
-You receive his next step, which fixed clinical rules or his clinician have ALREADY decided, the findings, the type of visit, and sometimes his own questions.
+const PREP = (lang, sex = 'male') => `You help a person prepare for a health visit booked through "Wiqaya", a reproductive and preventive health app for women and men in Abu Dhabi, UAE.
+${who(sex, lang)}
+You receive the person's next step, which fixed clinical rules or their clinician have ALREADY decided, the findings, the type of visit, and sometimes the person's own questions.
 Return JSON with:
-- "opening": what he can say in the first minute, in the first person ("I am here because ..."), at most 60 words, using only the findings given.
-- "questions": 3 to 5 short questions to ask the clinician, specific to the findings, the step and the visit type. Put his own questions first, rephrased clearly.
-Rules: never diagnose or say what he has. Never suggest that the step is unnecessary or could wait. No medicine names or doses. Tests or treatments may appear only as questions ("Should I repeat the semen analysis?"). Do not assume marital status or family plans beyond what the findings say. No blame. Plain words.
+- "opening": what the person can say in the first minute, in the first person ("I am here because ..."), at most 60 words, using only the findings given.
+- "questions": 3 to 5 short questions to ask the clinician, specific to the findings, the step and the visit type. Put the person's own questions first, rephrased clearly.
+Rules: never diagnose or say what the person has. Never suggest that the step is unnecessary or could wait. Never promise an outcome. No medicine names or doses. Tests or treatments may appear only as questions (${sex === 'female' ? '"Should my hormone tests be repeated?"' : '"Should I repeat the semen analysis?"'}). Do not assume marital status or family plans beyond what the findings say. No blame. Plain words.
 Write both in ${lang === 'ar' ? 'simple Modern Standard Arabic' : 'plain English'}.`
 
 const PREP_SCHEMA = {
@@ -311,6 +349,9 @@ async function target() {
       }
 }
 
+const RETRY_STATUS = new Set([403, 429, 500, 503])
+const RETRY_WAITS = [150, 400, 800, 1500, 2500]
+
 /** `extra` is merged into the request (e.g. response_format for the report reader). */
 export async function callModel(messages, extra = {}, timeoutMs = 20_000) {
   let url, headers, model
@@ -320,10 +361,11 @@ export async function callModel(messages, extra = {}, timeoutMs = 20_000) {
     // The service-account key could not be read or exchanged for a token.
     return { ok: false, status: 502 }
   }
-  // Gemini 3 always thinks before answering, and the thinking counts against max_completion_tokens: keep it low
-  // and give it its own headroom, or answers are cut off mid-sentence and JSON arrives incomplete.
+  // Gemini 3 thinks before answering, and the thinking counts against max_completion_tokens. These tasks are
+  // short rewrites and extractions, so thinking is set to minimal (about 2 s a reply instead of 5, and no
+  // replies cut off mid-sentence), with headroom in case a higher level is set through AI_REASONING_EFFORT.
   const vertex = provider() === 'vertex'
-  const effort = process.env.AI_REASONING_EFFORT || process.env.AZURE_OPENAI_REASONING_EFFORT || (vertex ? 'low' : '')
+  const effort = process.env.AI_REASONING_EFFORT || process.env.AZURE_OPENAI_REASONING_EFFORT || (vertex ? 'minimal' : '')
   const send = async (withTemperature) => {
     // Generous cap: reasoning models spend part of it thinking. The prompt keeps the visible answer short.
     const payload = { messages, max_completion_tokens: 1500, ...extra }
@@ -348,6 +390,13 @@ export async function callModel(messages, extra = {}, timeoutMs = 20_000) {
 
   try {
     let res = await send(true)
+    // Vertex now and then refuses a call outright (403 or 429, within about 0.1 s) and accepts the same call
+    // moments later. Try again a few times, a little later each time, before giving up.
+    for (const wait of vertex ? RETRY_WAITS : []) {
+      if (!RETRY_STATUS.has(res.status)) break
+      await new Promise((done) => setTimeout(done, wait))
+      res = await send(true)
+    }
     if (res.status === 400) {
       const text = await res.text()
       // A content filter can trip on medical sexual-health words: answer with the safe fallback, not an error.
@@ -396,16 +445,16 @@ export async function handler(event) {
 
   // Input guardrail: an emergency in the question is answered by fixed text, never by the model.
   if (req.mode === 'ask' && EMERGENCY_RE.some((r) => r.test(req.question))) {
-    return resp(200, { emergency: true, text: EMERGENCY_LINE[req.lang] })
+    return resp(200, { emergency: true, text: emergencyLine(req.lang, req.sex) })
   }
 
   // Visit preparation for an emergency makes no sense: the only preparation is to go now.
-  if (req.mode === 'prep' && req.result.emergency) return resp(200, { emergency: true, text: EMERGENCY_LINE[req.lang] })
+  if (req.mode === 'prep' && req.result.emergency) return resp(200, { emergency: true, text: emergencyLine(req.lang, req.sex) })
 
   if (req.mode === 'prep') {
     const out = await callModel(
       [
-        { role: 'system', content: PREP(req.lang) },
+        { role: 'system', content: PREP(req.lang, req.sex) },
         { role: 'user', content: userMessage(req) },
       ],
       { max_completion_tokens: 700, response_format: { type: 'json_schema', json_schema: { name: 'visit_preparation', strict: true, schema: PREP_SCHEMA } } },
@@ -427,12 +476,12 @@ export async function handler(event) {
 
   const isGrounded = req.mode === 'ask' && req.notes.length > 0
   const out = await callModel([
-    { role: 'system', content: isGrounded ? GROUNDED(req.lang) : SYSTEM(req.lang) },
+    { role: 'system', content: isGrounded ? GROUNDED(req.lang, req.sex) : SYSTEM(req.lang, req.sex) },
     { role: 'user', content: userMessage(req) },
   ])
   if (!out.ok && out.filtered) {
     console.log(JSON.stringify({ evt: 'ai_filtered', mode: req.mode, ms: Date.now() - started }))
-    const text = req.result.emergency ? `${EMERGENCY_LINE[req.lang]}\n\n${SAFE_FALLBACK[req.lang]}` : SAFE_FALLBACK[req.lang]
+    const text = req.result.emergency ? `${emergencyLine(req.lang, req.sex)}\n\n${SAFE_FALLBACK[req.lang]}` : SAFE_FALLBACK[req.lang]
     return resp(200, { text, guardrail: 'filtered' })
   }
   if (!out.ok) {
@@ -454,13 +503,13 @@ export async function handler(event) {
       cited = g.cited
     }
   }
-  if (violates(text)) {
+  if (violates(text, quotable(req))) {
     text = SAFE_FALLBACK[req.lang]
     guardrail = 'blocked'
     cited = isGrounded ? [] : undefined
   }
   if (req.result.emergency && !text.includes('998')) {
-    text = `${EMERGENCY_LINE[req.lang]}\n\n${text}`
+    text = `${emergencyLine(req.lang, req.sex)}\n\n${text}`
     guardrail = guardrail === 'pass' ? 'emergency_prefixed' : guardrail
   }
   console.log(JSON.stringify({ evt: 'ai_ok', mode: req.mode, grounded: isGrounded, lang: req.lang, level: req.result.level, guardrail, ms: Date.now() - started }))
@@ -471,4 +520,4 @@ export async function handler(event) {
 export const callAzure = callModel
 
 // Exposed for tests.
-export const _internal = { validate, userMessage, violates, checkGrounded, checkPrep, EMERGENCY_RE, NO_NOTE }
+export const _internal = { validate, userMessage, violates, quotable, checkGrounded, checkPrep, EMERGENCY_RE, NO_NOTE, SYSTEM, PREP }

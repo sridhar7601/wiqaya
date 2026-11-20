@@ -394,8 +394,8 @@ function AiPanel({ as }: { as: Assessment }) {
           <div className="space-y-3 rounded-lg bg-canvas p-4 text-sm text-body ring-1 ring-inset ring-line">
             <p>
               {t({
-                en: `Allow the AI helper? The titles of what was found and your suggested step will be sent to our AI service (${AI_PROVIDER}). Your answers, name and contact details are never sent.`,
-                ar: `هل تسمح للمساعد الذكي؟ ستُرسل عناوين ما تم العثور عليه وخطوتك المقترحة إلى خدمة الذكاء الاصطناعي لدينا (${AI_PROVIDER}). لا تُرسل إجاباتك أو اسمك أو بيانات التواصل أبداً.`,
+                en: `Allow the AI helper? The titles of what was found, your suggested step, and whether this is a woman’s or a man’s check will be sent to our AI service (${AI_PROVIDER}). Your other answers, name and contact details are never sent.`,
+                ar: `هل تسمح للمساعد الذكي؟ ستُرسل عناوين ما تم العثور عليه وخطوتك المقترحة، وهل الفحص لامرأة أم لرجل، إلى خدمة الذكاء الاصطناعي لدينا (${AI_PROVIDER}). لا تُرسل إجاباتك الأخرى أو اسمك أو بيانات التواصل أبداً.`,
               })}
             </p>
             <div className="flex gap-2">

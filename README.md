@@ -56,7 +56,7 @@ npm test                                            # unit tests (no network)
 npm run build                                       # type-check, run tests, build to dist/
 ```
 
-AI settings: copy `.env.example` to `.env.local` and fill in either an OpenAI key or the Azure OpenAI values, or pass them as environment variables. Keys are never committed. Without them the AI features answer "not available" and everything else works.
+AI settings: copy `.env.example` to `.env.local` and fill in one of: a Google Vertex AI service-account key (Gemini, what the live demo uses), an OpenAI key, or the Azure OpenAI values. Or pass them as environment variables. If you use a service other than Vertex AI, set `VITE_AI_PROVIDER` to its name when building, so the consent text names the right service. Keys are never committed. Without them the AI features answer "not available" and everything else works.
 
 Use `localhost`, not a LAN address, to try the private link: browsers only allow encryption on a secure address.
 

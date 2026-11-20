@@ -20,7 +20,7 @@ describe('Grounded answers, visit preparation and care search (no network)', () 
     process.env.AZURE_OPENAI_DEPLOYMENT = 'test'
     process.env.AZURE_OPENAI_API_KEY = 'test'
     process.env.STORE = 'memory'
-    delete process.env.ORIGIN_SECRET
+    for (const k of ['ORIGIN_SECRET', 'OPENAI_API_KEY', 'GCP_SERVICE_ACCOUNT_JSON', 'GOOGLE_APPLICATION_CREDENTIALS']) delete process.env[k]
     _local.clear()
   })
   afterEach(() => {
@@ -102,9 +102,36 @@ describe('Grounded answers, visit preparation and care search (no network)', () 
   })
 
   it('care search: keeps only known filter values and reports a symptom', async () => {
-    model(JSON.stringify({ area: 'al_ain', languages: ['ar', 'fr'], male_clinician: true, video: null, evenings: true, weekends: null, insurance: 'gold', symptom: true }))
+    model(JSON.stringify({ area: 'al_ain', languages: ['ar', 'fr'], male_clinician: true, female_clinician: null, video: null, evenings: true, weekends: null, insurance: 'gold', symptom: true }))
     const out = JSON.parse((await navigate(event({ text: 'Arabic male doctor in Al Ain after work, I have a lump' }))).body)
     expect(out).toEqual({ filter: { area: 'al_ain', languages: ['ar'], maleClinician: true, evenings: true }, symptom: true })
+  })
+
+  it('care search: a woman asking for a female doctor gets that filter, and it wins if both are set', async () => {
+    model(JSON.stringify({ area: 'abu_dhabi', languages: ['ar'], male_clinician: true, female_clinician: true, video: null, evenings: null, weekends: null, insurance: null, symptom: false }))
+    const out = JSON.parse((await navigate(event({ text: 'طبيبة تتكلم العربية في أبوظبي' }))).body)
+    expect(out).toEqual({ filter: { area: 'abu_dhabi', languages: ['ar'], femaleClinician: true }, symptom: false })
+  })
+
+  it('care search: refuses a reply that leaves a field out', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    model(JSON.stringify({ area: 'al_ain', languages: [], male_clinician: null, video: null, evenings: null, weekends: null, insurance: null, symptom: false }))
+    expect((await navigate(event({ text: 'clinic in Al Ain' }))).statusCode).toBe(502)
+  })
+
+  it('visit preparation for a woman is written for a woman, and a man’s for a man', async () => {
+    const reply = JSON.stringify({ opening: 'I am here because my cycles are irregular.', questions: ['Which tests do I need?', 'What can I do now?', 'When should I come back?'] })
+    const spy = model(reply)
+    await post({ lang: 'ar', mode: 'prep', visit: 'Family doctor', result: { ...result, sex: 'female' } })
+    const forWoman = JSON.parse(spy.mock.calls[0][1].body).messages[0].content
+    expect(forWoman).toMatch(/is a woman/)
+    expect(forWoman).toMatch(/hormone tests/)
+    expect(forWoman).not.toMatch(/\bhis\b|\bhe\b|men's|semen/)
+    model(reply)
+    await post({ lang: 'en', mode: 'prep', visit: 'Family doctor', result })
+    const forMan = JSON.parse(spy.mock.calls[1][1].body).messages[0].content
+    expect(forMan).toMatch(/is a man/)
+    expect(forMan).toMatch(/semen analysis/)
   })
 
   it('care search: refuses a reply that is not the fixed shape', () => {

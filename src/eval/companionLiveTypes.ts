@@ -2,6 +2,8 @@
 export interface CompanionLiveCase {
   id: string
   kind: 'ask' | 'search' | 'prep'
+  /** The invented example person whose result was sent (questions and visit preparation only). */
+  who?: 'omar' | 'yousef' | 'mariam' | 'fatima'
   lang: 'en' | 'ar'
   input: string
   ms: number

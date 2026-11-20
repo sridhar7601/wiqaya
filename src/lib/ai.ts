@@ -6,13 +6,17 @@ import type { Assessment, FiredFlag, Lang, Level, Sex } from './types'
 
 /**
  * The AI helper only rewrites the rule-based result in plain words or answers a general question.
- * It receives the result summary (flag titles and actions), never the person's answers or identity,
+ * It receives the result summary (flag titles and actions) and whether the check is a woman's or a man's,
+ * so the reply addresses the person correctly. It never receives the other answers or the person's identity,
  * and it cannot change the next step.
  */
 const ENDPOINT = (import.meta.env.VITE_AI_URL as string | undefined) || '/api/explain'
 
-/** The AI service named in every consent text. One place to change if the provider changes. */
-export const AI_PROVIDER = 'Microsoft Azure OpenAI'
+/**
+ * The AI service named in every consent text. One place to change if the provider changes; a deployment on
+ * another service sets VITE_AI_PROVIDER at build time so the consent text stays true.
+ */
+export const AI_PROVIDER = (import.meta.env.VITE_AI_PROVIDER as string | undefined) || 'Gemini on Google Cloud Vertex AI'
 
 export type AiProblem = 'unavailable' | 'error' | 'emergency' | 'no_note'
 
@@ -22,10 +26,12 @@ export type AiProblem = 'unavailable' | 'error' | 'emergency' | 'no_note'
  */
 export type AiResult = { ok: true; text: string; notes?: Note[]; cited?: string[] } | { ok: false; reason: AiProblem }
 
-/** What the AI is told about a result: titles and fixed rule texts, never the person's answers. */
+/** What the AI is told about a result: titles, fixed rule texts and the sex of the check. No other answer. */
 export interface AiBasis {
   level: Level
   emergency: boolean
+  /** Woman's or man's check: decides how the reply addresses the person, above all in Arabic. */
+  sex?: Sex
   step: string
   flags: { title: string; why: string; action: string; info: boolean }[]
   decidedBy?: 'rules' | 'clinician' | 'red_flag'
@@ -51,13 +57,13 @@ const flagsOf = (flags: FiredFlag[], lang: Lang) => flags.map((f) => ({ title: f
 
 export function resultPayload(as: Assessment, lang: Lang): AiBasis {
   const { main } = nextSteps(as)
-  return { level: as.level, emergency: as.emergency, step: main.title[lang], flags: flagsOf(as.flags, lang) }
+  return { level: as.level, emergency: as.emergency, sex: as.sex, step: main.title[lang], flags: flagsOf(as.flags, lang) }
 }
 
 /** The same summary for the 90-day plan: the current step, all findings (trends and work included) and who decided. */
 export function planPayload(v: { level: Level; emergency: boolean; flags: FiredFlag[]; decidedBy: AiBasis['decidedBy']; base?: { sex: Sex } }, lang: Lang): AiBasis {
   const step = stepFor(v.emergency ? 'emergency' : v.level, v.base?.sex)
-  return { level: v.level, emergency: v.emergency, step: step.title[lang], flags: flagsOf(v.flags, lang), decidedBy: v.decidedBy }
+  return { level: v.level, emergency: v.emergency, sex: v.base?.sex, step: step.title[lang], flags: flagsOf(v.flags, lang), decidedBy: v.decidedBy }
 }
 
 type Posted = { status: number; data: Record<string, unknown> } | null
@@ -93,7 +99,7 @@ export async function explainAi(basis: AiBasis, lang: Lang): Promise<AiResult> {
  * A question, answered only from the reviewed notes that match it (chosen here, on the phone). With no
  * matching note the AI is not called at all, and the person is told there is no reviewed answer yet.
  */
-export async function askGrounded(basis: AiBasis, lang: Lang, question: string, sex: Sex = 'male'): Promise<AiResult> {
+export async function askGrounded(basis: AiBasis, lang: Lang, question: string, sex: Sex = basis.sex ?? 'male'): Promise<AiResult> {
   if (looksUrgent(question)) return { ok: false, reason: 'emergency' }
   const notes = retrieve(question, 3, sex)
   if (!notes.length) return { ok: false, reason: 'no_note' }

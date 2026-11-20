@@ -33,8 +33,8 @@ const BLOCKS: { icon: LucideIcon; title: L10n; items: L10n[] }[] = [
         ar: 'فقط عند إنشاء رابط خاص لطبيب. تُشفَّر الأجزاء التي اخترتها فقط على هاتفك أولاً. يحتفظ خادمنا بالنسخة المشفّرة ولا يستطيع قراءتها، فالمفتاح موجود فقط في رابطك ورمز QR. تُحذف النسخة عند سحبها، أو بعد المدة التي اخترتها (24 ساعة أو 7 أيام).',
       },
       {
-        en: `Only when you ask the AI helper. The titles of your result and the suggested step, plus your question, go to our AI service (${AI_PROVIDER}). Your answers and identity are never sent.`,
-        ar: `فقط عند سؤال المساعد الذكي، فتُرسل عناوين نتيجتك والخطوة المقترحة مع سؤالك إلى خدمة الذكاء الاصطناعي لدينا (${AI_PROVIDER}). لا تُرسل إجاباتك أو هويتك أبداً.`,
+        en: `Only when you ask the AI helper. The titles of your result and the suggested step, whether this is a woman’s or a man’s check, and your question go to our AI service (${AI_PROVIDER}). Your other answers and identity are never sent.`,
+        ar: `فقط عند سؤال المساعد الذكي، فتُرسل عناوين نتيجتك والخطوة المقترحة، وهل الفحص لامرأة أم لرجل، مع سؤالك إلى خدمة الذكاء الاصطناعي لدينا (${AI_PROVIDER}). لا تُرسل إجاباتك الأخرى أو هويتك أبداً.`,
       },
       {
         en: 'Only when you use the lab report reader. The part of the picture inside the frame goes to the same AI service, which sends back numbers. We do not keep the picture. Leave your name outside the frame.',
