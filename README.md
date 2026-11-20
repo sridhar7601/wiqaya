@@ -31,6 +31,41 @@ Example people with months of history: `/#/try/mariam`, `/#/try/fatima`, `/#/try
 
 The AI never decides anything. The rules run on the phone.
 
+## Architecture
+
+![Architecture: the person's phone runs the consent gate, the safety-first intake, the data-quality gate, the 51 rules and the companion; an optional guarded AI proxy explains; an encrypted summary goes to the clinician, who confirms or changes the step.](deck/assets/architecture.jpg)
+
+| Part | Where it runs | Technology |
+|---|---|---|
+| Check, rules, companion, charts, encryption | On the person's device | React 19, TypeScript, Vite, Tailwind CSS; browser storage; Web Crypto (AES-256-GCM, HKDF) |
+| AI proxy: explainer, grounded answers, visit preparation, care search, report reader | Serverless functions (`api/`, `infra/ai/`) | Gemini 3 Flash on Google Cloud Vertex AI, behind input validation, rate limits and output guardrails |
+| Doctor link, feedback counters, shared rate limits | Serverless functions (`infra/server/`) | Upstash Redis; ciphertext and counters only |
+| Hand-off format | Built on the device | HL7 FHIR R4 bundle with a Consent resource (`src/lib/referral.ts`) |
+
+## Data and assumptions
+
+**No model is trained or fine-tuned.** The next step comes from fixed rules; Gemini is used as provided, only to explain and to read report photos. No challenge dataset was provided and no real patient data was used at any point.
+
+| Data | What it is | Used for |
+|---|---|---|
+| 89 synthetic cases (35 women's) | Written by the team from the cited guidelines, each with an expected next step (`src/eval/cases.ts`) | Rule accuracy, red flags, explainability, missing-data and fairness runs |
+| 890 counterfactual runs | The same 89 cases across 5 nationality groups and 2 languages | Checks that the step never changes with nationality or language |
+| 4 example people | Invented, with months of check-ins, results and doctor replies (`src/lib/companion/personas.ts`) | Showing change over time |
+| 10,000 invented adults | Generated from rough planning assumptions, not from real statistics (`src/lib/population.ts`) | The health-system view; totals only |
+| 18 synthetic report pictures | Computer-printed semen analysis reports, some tilted, dark or blurred, two that are not reports | Report reader tests |
+| 48 sources, 37 notes | Published guidelines (ASRM, ACOG, ESHRE, NICE, WHO, AUA, EAU), cited and paraphrased, never reproduced | The rules and the grounded AI answers |
+
+Assumptions: the person has a smartphone and internet access; a family physician or a women's health clinic is reachable; summaries can travel through existing Malaffi FHIR interfaces; Thiqa cardholders can book IFHAS.
+
+## Clinical boundaries
+
+- Screening and navigation support for adults (18+). **Not a diagnosis and not a medical device.**
+- No fertility score, and no prediction of whether or when someone will conceive. AMH is never shown as a prediction of natural pregnancy.
+- Fertility preservation appears only as a discussion to have with a clinician, never as a recommendation.
+- Red-flag symptoms are asked first and stop the check with emergency (998) or same-day advice.
+- The AI cannot change the step. Guardrails block diagnosis wording and any dose that is not quoted from the clinical notes.
+- A clinician confirms or changes the step; that decision replaces the rules' suggestion for 90 days.
+
 ## What the server holds
 
 | Data | Stored? | Detail |
@@ -64,7 +99,7 @@ Use `localhost`, not a LAN address, to try the private link: browsers only allow
 
 1. `npx vercel deploy --prod` from this folder. `vercel.json` sets the build, headers and function limits.
 2. Add the **Upstash for Redis** integration to the project (Storage tab). It sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`, which turn on the private link, the feedback counters and the shared rate limits.
-3. Set `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_VERSION` and `AZURE_OPENAI_API_KEY` in the project settings to turn on the two AI features.
+3. Set `GCP_SERVICE_ACCOUNT_JSON` in the project settings (the contents of a Google Cloud service-account key with the Vertex AI User role) to turn on the AI features. An `OPENAI_API_KEY`, or the Azure OpenAI values in `.env.example`, work instead.
 
 Each part degrades on its own: without the store the hand-off stays on the device, and without the AI key the numbers are typed by hand.
 
@@ -74,9 +109,11 @@ The AWS scripts in `infra/aws` deploy the static app and the explainer only.
 
 | What | How | Where the result shows |
 |---|---|---|
-| Rules engine | 54 synthetic cases, run live in the browser | `/evaluation` |
-| AI explainer | 21 live calls in English and Arabic: `npm run ai:eval` | `/evaluation` |
-| Lab report reader | 18 synthetic pictures, live model: `npm run ai:eval:reports` | `/evaluation` |
+| Rules engine | 89 synthetic cases, run live in the browser: 89/89 expected step, 13/13 red flags, none under-triaged | `/evaluation` |
+| Fairness | 890 counterfactual runs (5 nationality groups, 2 languages): 890/890 unchanged | `/evaluation` |
+| AI explainer | 43 live calls in English and Arabic, women and men: `npm run ai:eval` (42/43 on Gemini) | `/evaluation` |
+| AI companion (answers, care search, visit preparation) | 48 live calls: `npm run ai:eval:companion` (48/48) | `/evaluation` |
+| Lab report reader | 18 synthetic pictures, live model: `npm run ai:eval:reports` (80/80 values, 2/2 non-reports refused) | `/evaluation` |
 | Hand-off, feedback, rate limits, report checks | Unit tests: `npm test` | Build fails if any fails |
 | Encryption | Self-test in the visitor's browser | `/evaluation` |
 
@@ -84,11 +121,13 @@ The report pictures are generated by `npm run fixtures` (needs Chrome and ffmpeg
 
 ## Limits to know about
 
-- Expected results for the 54 cases were written by the team from guidelines. They **still need independent clinician labelling**.
+- Expected results for the 89 cases were written by the team from guidelines. They **still need independent clinician labelling**.
 - The report reader was tested on synthetic, computer-printed reports only. Real reports with stamps, handwriting, glare or folds are not measured yet.
 - The private link is a prototype channel. Anyone holding the link can read the summary until it expires or is withdrawn, and the clinician is not signed in. A pilot would deliver through Malaffi with clinician sign-in.
 - The Arabic text needs review by a native-speaking clinician.
+- Everything was tested with synthetic data. Validation with real patients belongs to a supervised pilot.
+- In the public demo the server store is not switched on, so the encrypted doctor link falls back to a demo on the device.
 
 ## Pages
 
-`/` home · `/check` consent and check-in · `/result` · `/report` lab report reader · `/share` summary and private link · `/d/<link>` what the doctor opens · `/clinician` inbox · `/evaluation` evidence · `/privacy` · `/how` · `/example/C44` instant sample result · add `?lang=ar` to any link for Arabic.
+`/` home · `/check` consent and check-in · `/result` · `/report` lab report reader · `/share` summary and private link · `/d/<link>` what the doctor opens · `/clinician` inbox · `/me` the plan over time · `/population` health-system view · `/evaluation` evidence · `/privacy` · `/how` · `/example/C44` instant sample result · add `?lang=ar` to any link for Arabic.

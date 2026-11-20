@@ -28,9 +28,10 @@ CAPABILITY = (
     'Sridhar S K (lead), Presidio Cloud Solutions: .NET, Java, React, JavaScript, AWS, AI and cloud deployment. '
     'Led the architecture, the explainable rules engine, the safety benchmarks and the guarded AI layer.\n'
     'Sruthi K, Saama Technologies: MERN stack (MongoDB, Express, React, Node.js), full-stack engineering and AI.\n'
-    'During the challenge we built Wiqaya end to end: a bilingual, mobile-first app, 31 guideline-based rules, '
-    'an HL7 FHIR R4 referral with consent, a clinician review step, and an evaluation harness '
-    '(54 synthetic cases checked on every build, plus 21 live AI tests).'
+    'During the challenge we built Wiqaya end to end: a bilingual, mobile-first check and companion for women and men, '
+    '51 cited rules, cycles and results charted over time, an encrypted HL7 FHIR R4 summary with consent, '
+    'a clinician review step, and an evaluation harness '
+    '(89 synthetic cases and 162 unit tests on every build, plus live AI tests on Gemini).'
 )
 
 # ---------------------------------------------------------------- style
@@ -226,7 +227,7 @@ S = list(prs.slides)
 
 # ---------------------------------------------------------------- 1. Title
 box = next(sh for sh in S[0].shapes if sh.has_text_frame and 'Team Name' in sh.text_frame.text)
-values = {'Team Name:': 'Zord', 'Team Size:': '2', 'Problem Statement:': '[Fertility] Male Reproductive Health'}
+values = {'Team Name:': 'Zord', 'Team Size:': '2', 'Problem Statement:': '[Fertility] Reproductive Potential'}
 for p in box.text_frame.paragraphs:
     label = ''.join(r.text for r in p.runs).strip()
     if label in values:
@@ -236,7 +237,7 @@ tf = box.text_frame
 p = tf.add_paragraph()
 p.space_before = Pt(6)
 _run(p, 'Solution: ', 13, bold=True, color=BRAND)
-_run(p, "Wiqaya, a private and explainable front door to men's reproductive and preventive health", 13, color=BODY)
+_run(p, 'Wiqaya, a private and explainable companion for reproductive potential over time, for women and men', 13, color=BODY)
 p = tf.add_paragraph()
 _run(p, 'Prototype: ', 13, bold=True, color=BRAND)
 _run(p, URL, 13, color=BODY)
@@ -262,131 +263,136 @@ for i, line in enumerate(CAPABILITY.split('\n')):
     else:
         paras.append({'runs': [(line, {'bold': i == 0, 'color': INK if i == 0 else BODY})], 'space': 8})
 text(S[2], X0, TOP + 0.05, 6.1, 3.6, paras, size=12)
-card(S[2], 6.85, TOP + 0.05, 2.73, 2.55, fill=BRAND_SOFT, line=BRAND_LINE)
-text(S[2], 7.03, TOP + 0.2, 2.4, 2.3, [
+card(S[2], 6.85, TOP + 0.05, 2.73, 2.75, fill=BRAND_SOFT, line=BRAND_LINE)
+text(S[2], 7.03, TOP + 0.2, 2.4, 2.5, [
     {'runs': [('Built in the challenge window', {'bold': True, 'color': BRAND, 'size': 11.5})], 'space': 8},
     {'runs': [('Bilingual app (Arabic / English)', {})], 'bullet': True},
-    {'runs': [('31 cited clinical rules', {})], 'bullet': True},
-    {'runs': [('Guarded Azure OpenAI layer', {})], 'bullet': True},
-    {'runs': [('FHIR R4 referral + consent', {})], 'bullet': True},
-    {'runs': [('Clinician review & audit', {})], 'bullet': True},
-    {'runs': [('23 automated tests + 21 live AI tests', {})], 'bullet': True},
+    {'runs': [('51 cited rules, women and men', {})], 'bullet': True},
+    {'runs': [('Cycles and results over time', {})], 'bullet': True},
+    {'runs': [('Guarded AI: Gemini on Vertex AI', {})], 'bullet': True},
+    {'runs': [('Encrypted FHIR R4 summary', {})], 'bullet': True},
+    {'runs': [('Clinician review step', {})], 'bullet': True},
+    {'runs': [('162 unit tests + live AI runs', {})], 'bullet': True},
 ], size=10.5)
 
 # ---------------------------------------------------------------- 4. Architecture
 arch = ASSETS / 'architecture.jpg'
 picture(S[3], arch, X0, 1.35, w=W0, border=False, name='Architecture diagram')
-text(S[3], X0, 4.22, W0, 1.0, [
-    {'runs': [B('How it decides: '), N('deterministic, cited rules run on the phone and choose one of five next steps. Red flags are asked second and route straight to 998.')], 'space': 5},
-    {'runs': [B('What the AI does: '), N('optionally rewrites the result summary in plain Arabic or English. It never sees the answers and cannot change the step; input and output guards block emergencies, diagnoses and doses.')], 'space': 5},
-    {'runs': [B('Stack: '), N('React + TypeScript on the device · one serverless function (AI proxy, no database) · Azure OpenAI GPT-4.1 · HL7 FHIR R4 for Malaffi.')]},
-], size=10)
+text(S[3], X0, 4.2, W0, 1.1, [
+    {'runs': [B('How it decides: '), N('fixed, cited rules run on the phone and choose one of five next steps. Red flags are asked first and route straight to 998. There is no fertility score.')], 'space': 4},
+    {'runs': [B('What the AI does: '), N('optionally explains the result in plain Arabic or English, answers from 37 sourced notes and reads a lab-report photo. It never sees the answers and cannot change the step; guards block diagnoses and doses. No model is trained or fine-tuned.')], 'space': 4},
+    {'runs': [B('Stack: '), N('React 19 + TypeScript on the device · serverless functions on Vercel (AI proxy, ciphertext-only summary store) · Gemini 3 Flash on Google Cloud Vertex AI · HL7 FHIR R4 for Malaffi.')]},
+], size=9.6)
 
 # ---------------------------------------------------------------- 5. Target users & outcome
 text(S[4], X0, 1.32, 6.55, 3.95, [
     {'runs': [('Who it serves', {'bold': True, 'color': BRAND, 'size': 12.5})], 'space': 5},
-    {'runs': [B('Men 18+ in Abu Dhabi: '), N('any nationality, Arabic or English, planning a family or not. Many reach care only after months of trying, or after their partner is tested.')], 'bullet': True},
-    {'runs': [B('Family physicians: '), N('receive a structured, consented summary instead of a cold start.')], 'bullet': True},
-    {'runs': [B('Andrology, urology and fertility services: '), N('see men earlier, with the key facts ready.')], 'bullet': True},
-    {'runs': [B('ADPHC / DoH teams: '), N('anonymous, aggregate insight into male risk and screening uptake.')], 'bullet': True, 'space': 10},
+    {'runs': [B('Women and men 18+ in Abu Dhabi: '), N('any nationality, Arabic or English, planning a family now, later or not sure. Many learn how fertility changes only once they are trying.')], 'bullet': True},
+    {'runs': [B('Family physicians and women’s health clinics: '), N('receive a structured, consented summary instead of a cold start.')], 'bullet': True},
+    {'runs': [B('Fertility, gynaecology, andrology and urology services: '), N('see people earlier, with the key facts ready.')], 'bullet': True},
+    {'runs': [B('ADPHC / DoH teams: '), N('totals only, on who would benefit from earlier advice.')], 'bullet': True, 'space': 9},
     {'runs': [('Intended outcome', {'bold': True, 'color': BRAND, 'size': 12.5})], 'space': 5},
-    {'runs': [B('Earlier, explainable risk identification '), N('before infertility is diagnosed, across history, lifestyle, metabolic, infectious, anatomical and test inputs.')], 'bullet': True},
-    {'runs': [B('Lower friction: '), N('5 minutes, no account, discreet mode, teleconsultation and male-doctor options, home tests as a first step.')], 'bullet': True},
-    {'runs': [B('Safe triage '), N('to one of five next steps; red flags to 998; a clinician confirms every referral.')], 'bullet': True},
-    {'runs': [B('A hook for prevention: '), N('reproductive health brings men in; the same visit covers the heart and diabetes checks they usually skip (routine check / IFHAS).')], 'bullet': True},
-], size=10.5)
+    {'runs': [B('An honest view of change over time: '), N('cycles, AMH, semen results and habits charted over months; what can change, what cannot and what is not yet known. No score.')], 'bullet': True},
+    {'runs': [B('Earlier, informed choices: '), N('from healthy habits to tests, preconception counselling, a fertility-preservation discussion or a specialist. Options to discuss, never recommendations.')], 'bullet': True},
+    {'runs': [B('Lower friction: '), N('5 minutes, no account, discreet mode, quick exit, teleconsultation and female-doctor options.')], 'bullet': True},
+    {'runs': [B('Safe triage '), N('to one of five next steps; red flags to 998; a clinician confirms.')], 'bullet': True},
+], size=10.1)
 picture(S[4], ASSETS / 'result-phone.jpg', 7.45, 1.25, h=4.05, name='Result screen')
 
 # ---------------------------------------------------------------- 6. Success measures
 table(S[5], X0, 1.32, [1.9, 2.45, 2.15, 2.66],
       ['Measure', 'Prototype result (synthetic)', 'Proposed pilot target', 'How it is measured'],
       [
-          ['Red flags caught', '8 / 8 (100%)', '100%', 'Clinician audit of every urgent case'],
-          ['Under-triage', '0 of 54 cases', '0 serious under-triage', 'Two-clinician review of a random sample'],
-          ['Correct next step', '54 / 54 vs. team labels', '≥ 95% agreement', 'Independent labels by two clinicians'],
-          ['Fairness', '540 / 540 unchanged across nationality × language', 'No gap > 5 points between groups', 'Completion and referral rates by language, age, nationality'],
-          ['AI safety', '21 / 21 live tests · 10 offline guardrail tests', '0 diagnosis or dose statements', 'Automated filters + weekly sample review'],
-          ['Completed assessments', 'Counted anonymously on device', '≥ 70% of started checks', 'Anonymous start / finish counts'],
-          ['Time to appropriate evaluation', 'Measured in pilot', 'Shorter than today’s baseline', 'Days from check to first matching visit (Malaffi)'],
-          ['Referral completion', 'Clinician confirm / change log', '≥ 60% of shared referrals attended', 'Referral matched to an encounter'],
+          ['Red flags caught', '13 / 13 (100%); emergencies 4 / 4', '100%', 'Clinician audit of every urgent case'],
+          ['Under-triage', '0 of 89 cases', '0 serious under-triage', 'Two-clinician review of a random sample'],
+          ['Correct next step', '89 / 89 vs. team labels', '≥ 95% agreement', 'Independent labels by two clinicians'],
+          ['Fairness', '890 / 890 unchanged across nationality × language', 'No gap > 5 points between groups', 'Completion and referral rates by sex, language, age, nationality'],
+          ['AI safety', 'Live runs: explainer 42/43, companion 48/48, report reader 80/80', '0 diagnosis or dose statements', 'Automated filters + weekly sample review'],
+          ['Informed choice', 'Not measured yet', '≥ 80% can name their options', 'Short decision-quality questions after the result'],
+          ['Time to appropriate evaluation', 'Modelled only: 207 women, mean 5.8 months earlier', 'Shorter than today’s baseline', 'Days from check to first matching visit (Malaffi)'],
+          ['Referral completion', 'Clinician confirm / change log', '≥ 60% of shared summaries attended', 'Summary matched to an encounter'],
           ['User trust', '1–5 survey after each result', 'Mean ≥ 4.0', 'Two questions: private & respectful; clear next step'],
       ], size=9, head_size=9.5, row_h=0.36, name='Success measures')
-text(S[5], X0, 5.08, W0, 0.25, [{'runs': [('Prototype figures are measured live on synthetic cases (see the /evaluation page). Pilot targets are proposed, to be agreed with DoH / ADPHC.', {'size': 8.5, 'color': MUTED})]}])
+text(S[5], X0, 5.08, W0, 0.25, [{'runs': [('Prototype figures are measured on synthetic cases (see the /evaluation page); the modelled figure uses 10,000 invented people. Pilot targets are proposed, to be agreed with DoH / ADPHC.', {'size': 8.5, 'color': MUTED})]}])
 
 # ---------------------------------------------------------------- 7. Evidence
 text(S[6], X0, TOP, 5.55, 3.85, [
-    {'runs': [('Clinical evidence behind the rules', {'bold': True, 'color': BRAND, 'size': 12})], 'space': 5},
-    {'runs': [B('WHO semen manual, 6th ed. (2021): '), N('lower reference limits for semen results.')], 'bullet': True},
-    {'runs': [B('AUA/ASRM male infertility guideline (2020, amended 2024): '), N('evaluation timing, risk history, exogenous testosterone.')], 'bullet': True},
-    {'runs': [B('EAU Sexual & Reproductive Health (2024): '), N('varicocele, mumps orchitis, infection, hypogonadism, lifestyle.')], 'bullet': True},
-    {'runs': [B('NICE CG156: '), N('assess after 12 months of trying, or 6 if the female partner is 35+.')], 'bullet': True},
-    {'runs': [B('NICE NG12: '), N('urgent route for a new testicular lump.')], 'bullet': True},
-    {'runs': [B('Princeton III consensus (2012): '), N('erectile dysfunction as an early cardiovascular marker.')], 'bullet': True},
-    {'runs': [B('ASRM, Optimizing natural fertility (2022): '), N('smoking, weight, activity.')], 'bullet': True},
-    {'runs': [B('ADPHC IFHAS programme: '), N('periodic screening for Thiqa cardholders aged 18–75.')], 'bullet': True, 'space': 9},
-    {'runs': [('Local insight. ', {'bold': True, 'color': BRAND}), N('ADPHC experts (Population Health briefing, Oct 2026): men take up reproductive screening well but rarely attend cardiometabolic screening. Wiqaya uses the first to drive the second.')]},
-], size=9.8)
+    {'runs': [('Clinical evidence behind the rules (48 sources)', {'bold': True, 'color': BRAND, 'size': 12})], 'space': 5},
+    {'runs': [B('ASRM fertility evaluation of women; ACOG age-related decline: '), N('when to assess, and how age changes fertility.')], 'bullet': True},
+    {'runs': [B('ASRM ovarian reserve testing; JAMA 2017: '), N('AMH shows roughly how many eggs remain; it does not predict natural pregnancy.')], 'bullet': True},
+    {'runs': [B('ASRM planned egg freezing; ESHRE fertility preservation: '), N('what preservation involves. A discussion, not a recommendation.')], 'bullet': True},
+    {'runs': [B('International PCOS guideline 2023; FIGO; ESHRE endometriosis 2022: '), N('cycle and symptom rules.')], 'bullet': True},
+    {'runs': [B('NICE NG126, NG12: '), N('emergency and urgent routes.')], 'bullet': True},
+    {'runs': [B('WHO semen manual (2021); AUA/ASRM; EAU: '), N('semen limits, evaluation timing, risk history.')], 'bullet': True},
+    {'runs': [B('NICE CG156: '), N('assess after 12 months of trying, or 6 if the woman is 35+.')], 'bullet': True},
+    {'runs': [B('WHO preconception care; USPSTF folic acid; ADA 2026: '), N('preconception and metabolic health.')], 'bullet': True},
+    {'runs': [B('ADPHC IFHAS programme: '), N('periodic screening for Thiqa cardholders.')], 'bullet': True, 'space': 8},
+    {'runs': [('Honest limit. ', {'bold': True, 'color': BRAND}), N('The team compiled the rules from these guidelines. Every rule shows its source in the app; clinician review of each one belongs to the pilot.')]},
+], size=9.5)
 heading(S[6], 6.2, TOP, 3.4, 'Prior testing of this prototype', size=12)
 sx, sy, sw, gap = 6.2, TOP + 0.38, 1.62, 0.14
-stats = [('100%', 'red flags caught (8/8)'), ('0', 'under-triaged (54 cases)'), ('54/54', 'correct next step'),
-         ('540/540', 'unchanged across groups'), ('21/21', 'live AI safety tests'), ('1.8 s', 'median AI reply')]
+stats = [('13/13', 'red flags caught'), ('0', 'under-triaged (89 cases)'), ('89/89', 'correct next step'),
+         ('890/890', 'unchanged across groups'), ('42/43', 'live AI explainer tests'), ('80/80', 'report values read correctly')]
 for i, (v, l) in enumerate(stats):
     stat(S[6], sx + (i % 2) * (sw + gap), sy + (i // 2) * (0.82 + gap), sw, v, l)
-text(S[6], 6.2, sy + 3 * (0.82 + gap) + 0.02, 3.38, 0.4, [{'runs': [('Reproducible: npm test, and the live /evaluation page in the prototype.', {'size': 8.5, 'color': MUTED})]}])
+text(S[6], 6.2, sy + 3 * (0.82 + gap) + 0.02, 3.38, 0.4, [{'runs': [('Synthetic data. Companion AI: 48/48. Reproducible: npm test, and the live /evaluation page in the prototype.', {'size': 8.5, 'color': MUTED})]}])
 
 # ---------------------------------------------------------------- 8. Data sources
-table(S[7], X0, TOP + 0.02, [1.72, 1.6, 1.05, 1.1, 2.39, 1.3],
+table(S[7], X0, TOP - 0.06, [1.78, 1.62, 0.95, 1.0, 2.56, 1.25],
       ['Source', 'Type', 'Owner', 'Sensitivity', 'Permission / legal basis', 'Personal data?'],
       [
-          ['54 synthetic test cases', 'Authored clinical vignettes', 'Team Zord', 'None', 'Created by the team', 'No'],
-          ['Published guidelines (WHO, AUA/ASRM, EAU, NICE, ASRM)', 'Reference literature, paraphrased into rules', 'Publishers', 'Public', 'Cited; no text or data reproduced', 'No'],
-          ['Answers in the app', 'Self-reported health information', 'The user', 'High (reproductive)', 'Explicit consent; processed and stored only on the user’s device', 'Yes, on device only'],
-          ['Shared referral summary', 'HL7 FHIR R4 bundle', 'The user → clinician', 'High', 'Per-share consent, recorded as a FHIR Consent resource', 'Pseudonymous'],
-          ['AI explainer request', 'Result summary + optional question', 'The user', 'Low', 'Separate AI opt-in; not stored; Azure OpenAI does not train on API data', 'No identifiers'],
-          ['Usage counters, feedback', 'Anonymous counts, 1–5 scores', 'Team Zord', 'Low', 'On device (prototype); aggregate-only in pilot', 'No'],
-      ], size=8.8, head_size=9, row_h=0.47, name='Data sources')
-text(S[7], X0, 5.05, W0, 0.25, [{'runs': [('No challenge dataset was provided, and no real patient data was used at any point.', {'size': 9, 'bold': True, 'color': BRAND})]}])
+          ['89 synthetic test cases (35 women’s)', 'Authored clinical vignettes', 'Team Zord', 'None', 'Created by the team', 'No'],
+          ['4 example people; 10,000 invented people', 'Generated histories; simulated population', 'Team Zord', 'None', 'Created by the team; no real person', 'No'],
+          ['Published guidelines (48 sources: ASRM, ACOG, ESHRE, NICE, WHO, AUA, EAU)', 'Reference literature, paraphrased into rules and 37 notes', 'Publishers', 'Public', 'Cited; no text or data reproduced', 'No'],
+          ['Answers, check-ins and results in the app', 'Self-reported health information', 'The user', 'High (reproductive)', 'Explicit consent; processed and stored only on the user’s device; optional PIN lock', 'Yes, on device only'],
+          ['Shared summary', 'HL7 FHIR R4 bundle, encrypted on the phone', 'The user → clinician', 'High', 'Per-share consent (FHIR Consent); the server holds ciphertext only; can be withdrawn', 'Pseudonymous'],
+          ['AI request', 'Result summary, a question, or a report photo', 'The user', 'Low; photo: high', 'Separate AI opt-in; never logged by us; Google does not train on it and may hold it briefly', 'No identifiers sent'],
+          ['Usage counters, feedback', 'Anonymous counts, 1–5 scores', 'Team Zord', 'Low', 'Counters only; nothing else is accepted', 'No'],
+      ], size=8.3, head_size=8.8, row_h=0.42, name='Data sources')
+text(S[7], X0, 5.1, W0, 0.25, [{'runs': [('No challenge dataset was provided, no real patient data was used at any point, and no model was trained or fine-tuned.', {'size': 9, 'bold': True, 'color': BRAND})]}])
 
 # ---------------------------------------------------------------- 9. Risks & safeguards
 table(S[8], X0, TOP + 0.02, [1.2, 1.85, 4.31, 1.8],
       ['Area', 'Risk', 'Safeguard in the prototype', 'Tested by'],
       [
-          ['Privacy', 'Exposure of sensitive reproductive data', 'On-device processing; no account or ID; data minimisation; per-share consent; discreet mode; one-tap delete; no analytics or third-party requests', 'Architecture; Privacy page'],
-          ['Security', 'API abuse, key leakage', 'Key only on the server; origin secret; input validation, size and rate limits; no request logging. Pilot: UAE hosting, role-based access, audit logs', '10 offline guardrail tests'],
-          ['Bias', 'Uneven results across groups', 'Rules never see nationality or language; Arabic and English; “Prefer not to say” never hides a red flag', '540 / 540 counterfactual runs'],
-          ['Explainability', 'Black-box advice', 'Deterministic, cited rules; every signal shows its triggering answer and source; screens label you / rules / AI / clinician', '58 / 58 signals with evidence + source'],
-          ['Misuse', 'Read as a diagnosis; self-medication', '“Screening, not diagnosis” on every result; AI blocked from diagnoses and doses; never advises stopping medicines', '21 / 21 live AI tests'],
-          ['Human oversight', 'Over-reliance on automation', 'A clinician confirms or changes every referral, with a reason; the decision is logged', 'Clinician review flow'],
-          ['Failure modes', 'Missed emergency, bad data, AI outage', 'Red flags asked second, hard-coded to 998; data-quality gate ignores impossible values; app complete without AI', '8 / 8 red flags; 3 / 3 planted errors'],
-      ], size=8.6, head_size=9, row_h=0.46, name='Risks and safeguards')
+          ['Privacy', 'Exposure of sensitive reproductive data', 'On-device processing; no account or ID; optional PIN lock; per-share consent; summary marked for care only, never employment or insurance; discreet mode, quick exit, one-tap delete', 'Architecture; Privacy page'],
+          ['Security', 'API abuse, key leakage', 'Keys only on the server; summary encrypted with AES-256-GCM, key only in the link; validation, size and rate limits; no request logging. Pilot: UAE hosting, clinician sign-in, audit logs', '162 unit tests'],
+          ['Bias', 'Uneven results across groups', 'Rules never see nationality or language; women and men each have their own rules; Arabic and English; “Prefer not to say” never hides a red flag', '890 / 890 counterfactual runs'],
+          ['Explainability', 'Black-box advice', 'Deterministic, cited rules; every finding shows its triggering answer and source; screens label you / rules / AI / clinician; no fertility score', '102 / 102 findings with evidence + source'],
+          ['Misuse', 'Read as a diagnosis; false reassurance; pressure to freeze eggs', '“Screening, not diagnosis” on every result; AMH never shown as a prediction; preservation only as a discussion; AI blocked from diagnoses and doses', 'Live AI runs 42/43 and 48/48'],
+          ['Human oversight', 'Over-reliance on automation', 'A clinician confirms or changes the step, with a reason; that decision stands for 90 days', 'Clinician review flow'],
+          ['Failure modes', 'Missed emergency, bad data, AI outage', 'Red flags asked first, hard-coded to 998; data-quality gate ignores impossible values; app complete without AI', '13 / 13 red flags; 4 / 4 planted errors; 0 crashes in 89 missing-data runs'],
+      ], size=8.4, head_size=9, row_h=0.46, name='Risks and safeguards')
 
 # ---------------------------------------------------------------- 10. Hardware
-text(S[9], X0, TOP + 0.1, 5.4, 2.4, [
+text(S[9], X0, TOP + 0.1, 4.9, 2.4, [
     {'runs': [('Not applicable: Wiqaya is software only.', {'bold': True, 'color': BRAND, 'size': 14})], 'space': 10},
     {'runs': [N('Runs in any modern mobile or desktop browser (iOS, Android, desktop). No app install, wearable, sensor or connected device is needed.')], 'bullet': True},
     {'runs': [N('No hardware sourcing or device-safety considerations apply.')], 'bullet': True},
-    {'runs': [N('Future option, with separate consent: import sleep and activity data from wearables already used in Abu Dhabi programmes.')], 'bullet': True},
+    {'runs': [N('Future option, with separate consent: import cycle, sleep and activity data from wearables already used in Abu Dhabi programmes.')], 'bullet': True},
 ], size=11.5)
-picture(S[9], ASSETS / 'emergency-phone.jpg', 7.45, 1.25, h=4.05, name='Emergency screen')
-text(S[9], X0, TOP + 2.05, 5.4, 0.5, [{'runs': [('Right: the red-flag screen, shown immediately when a possible emergency is reported.', {'size': 9, 'color': MUTED, 'italic': True})]}])
+picture(S[9], ASSETS / 'results-phone.jpg', 5.95, 1.66, h=3.66, name='Results over time screen')
+picture(S[9], ASSETS / 'emergency-phone.jpg', 7.8, 1.66, h=3.66, name='Emergency screen')
+text(S[9], X0, TOP + 2.35, 4.9, 0.6, [{'runs': [('Left: results charted over time (example person, invented data). Right: the red-flag screen, shown immediately when a possible emergency is reported.', {'size': 9, 'color': MUTED, 'italic': True})]}])
 
 # ---------------------------------------------------------------- 11. Access
-text(S[10], X0, TOP + 0.08, 4.45, 3.7, [
-    {'runs': [('No login required. Every feature is open to guests.', {'bold': True, 'color': BRAND, 'size': 12.5})], 'space': 9},
-    {'runs': [B('1. Open '), (URL, {'bold': True, 'color': BRAND}), N(' on a phone or computer.')], 'space': 6},
-    {'runs': [B('2. Tap “Start the check”. '), N('About 5 minutes, no account.')], 'space': 6},
-    {'runs': [B('3. Instant examples: '), N('/#/result?example=C44, C28, or C45 (emergency).')], 'space': 6},
-    {'runs': [B('4. Clinician inbox (demo): '), N('/#/clinician')], 'space': 6},
-    {'runs': [B('5. Safety and test results: '), N('/#/evaluation')], 'space': 6},
-    {'runs': [B('6. Arabic: '), N('use the language switch at the top, or add ?lang=ar to any link.')], 'space': 6},
-], size=10.5)
+text(S[10], X0, TOP + 0.08, 4.45, 3.8, [
+    {'runs': [('No login required. Every feature is open to guests.', {'bold': True, 'color': BRAND, 'size': 12.5})], 'space': 8},
+    {'runs': [B('1. Open '), (URL, {'bold': True, 'color': BRAND}), N(' on a phone or computer.')], 'space': 5},
+    {'runs': [B('2. Tap “Start the check”. '), N('About 5 minutes, no account.')], 'space': 5},
+    {'runs': [B('3. Instant example results: '), N('/#/result?example=W14, W23, C44, or W31 (emergency).')], 'space': 5},
+    {'runs': [B('4. Example people with months of history: '), N('/#/try/mariam, /#/try/fatima, /#/try/omar, /#/try/yousef')], 'space': 5},
+    {'runs': [B('5. Clinician inbox (demo): '), N('/#/clinician · '), B('Health-system view: '), N('/#/population')], 'space': 5},
+    {'runs': [B('6. Safety and test results: '), N('/#/evaluation')], 'space': 5},
+    {'runs': [B('7. Arabic: '), N('use the language switch at the top, or add ?lang=ar to any link.')], 'space': 5},
+], size=10.2)
 picture(S[10], ASSETS / 'hero-desk.jpg', 5.05, TOP + 0.08, w=4.53, name='Home page')
 
 # ---------------------------------------------------------------- 12. Path to pilot
 phases = [
-    ('Phase 1 · Months 0–3', 'Validate', ['Two clinicians label the test cases', 'Andrology / urology sign-off on rules v1.0', 'Native Arabic clinical review', 'Usability with 30 men; DoH data-protection review']),
-    ('Phase 2 · Months 3–9', 'Pilot', ['2–3 primary care centres + 1 fertility centre', 'Embedded in Sehatna (web view)', 'FHIR summaries to family physicians via Malaffi', 'Track completion, time to evaluation, referral completion, trust']),
-    ('Phase 3 · Months 9–18', 'Scale', ['Emirate-wide through Sehatna', 'Linked to IFHAS booking', 'Payer pathways (Thiqa / Daman)', 'Publish outcomes; extend to couples’ preconception checks']),
+    ('Phase 1 · Months 0–3', 'Validate', ['Two clinicians label the 89 test cases', 'Gynaecology, fertility and andrology sign-off on rules v1.0', 'Native Arabic clinical review', 'Usability with 30 women and men; DoH data-protection review']),
+    ('Phase 2 · Months 3–9', 'Pilot', ['2–3 primary care centres + 1 fertility centre', 'Embedded in Sahatna (web view)', 'FHIR summaries via Malaffi, with clinician sign-in', 'Track completion, informed choice, time to evaluation, trust']),
+    ('Phase 3 · Months 9–18', 'Scale', ['Emirate-wide through Sahatna', 'Linked to IFHAS booking', 'Payer pathways (Thiqa / Daman)', 'Publish outcomes; add shared plans for couples']),
 ]
 pw, pg = (W0 - 2 * 0.16) / 3, 0.16
 for i, (when, what, items) in enumerate(phases):
@@ -400,7 +406,7 @@ for i, (when, what, items) in enumerate(phases):
 cy = TOP + 2.1
 text(S[11], X0, cy, 4.5, 1.7, [
     {'runs': [('Stakeholders and integration', {'bold': True, 'color': BRAND, 'size': 11})], 'space': 4},
-    {'runs': [N('DoH Abu Dhabi, ADPHC (IFHAS), Malaffi, Sehatna, primary care networks, fertility centres, payers.')], 'bullet': True},
+    {'runs': [N('DoH Abu Dhabi, ADPHC (IFHAS), Malaffi, Sahatna, primary care networks, women’s health and fertility centres, payers.')], 'bullet': True},
     {'runs': [N('HL7 FHIR R4 in and out; runs inside existing apps, so no new hospital software is needed.')], 'bullet': True},
 ], size=9.6)
 text(S[11], X0 + 4.66, cy, 4.5, 1.7, [
@@ -419,11 +425,11 @@ table(S[12], X0, TOP + 0.55, [3.2, 3.4, 2.56],
           ['React, React DOM, React Router', 'User interface and navigation', 'MIT (open source)'],
           ['Vite, Vitest, Tailwind CSS', 'Build, automated tests, styling', 'MIT (open source)'],
           ['TypeScript', 'Programming language', 'Apache-2.0 (open source)'],
-          ['Lucide icons (lucide-react)', 'Interface icons', 'ISC (open source)'],
+          ['Lucide icons; uqr; fflate', 'Interface icons; QR code for the doctor link; compression', 'ISC; MIT; MIT (open source)'],
           ['IBM Plex Sans / Plex Sans Arabic', 'Typeface, bundled with the app', 'SIL Open Font Licence 1.1'],
-          ['Microsoft Azure OpenAI (GPT-4.1)', 'Optional plain-language explanations', 'Commercial API, Microsoft terms'],
-          ['Cloud hosting (static site + serverless function)', 'Delivery of the prototype', 'Provider’s commercial terms'],
-          ['Clinical guidelines (WHO, AUA, EAU, NICE)', 'Evidence for the rules', 'Publisher copyright; cited, not reproduced'],
+          ['Google Gemini 3 Flash on Vertex AI', 'Optional explanations, grounded answers, report reading', 'Commercial API, Google Cloud terms'],
+          ['Vercel (static site + serverless functions)', 'Delivery of the prototype', 'Provider’s commercial terms'],
+          ['Clinical guidelines (ASRM, ACOG, ESHRE, NICE, WHO, AUA, EAU)', 'Evidence for the rules', 'Publisher copyright; cited, not reproduced'],
       ], size=9, head_size=9.5, row_h=0.31, name='Third-party components')
 text(S[12], X0, 5.12, W0, 0.22, [{'runs': [('Restrictions: none known. All open-source licences are permissive; attributions are kept in the code repository.', {'size': 9, 'color': MUTED})]}])
 
@@ -436,34 +442,46 @@ text(S[13], X0, TOP + 0.1, W0, 3.4, [
     {'runs': [N('No access to non-public information about the challenge or its evaluation.')], 'bullet': True},
 ], size=11.5)
 
-# ---------------------------------------------------------------- 15. Additional: assumptions & limitations
+# ---------------------------------------------------------------- 15. Additional: assumptions, limitations, test data
 title15 = next(sh for sh in S[14].shapes if sh.has_text_frame and 'Additional' in sh.text_frame.text)
 title15.top = Inches(0.94)
 title15.left = Inches(0.28)
 p0 = title15.text_frame.paragraphs[0]
-p0.runs[0].text = 'Assumptions and limitations'
+p0.runs[0].text = 'Assumptions, limitations and test data'
 for r in p0.runs[1:]:
     r.text = ''
-cw = (W0 - 0.3) / 2
+cg = 0.22
+cw = (W0 - 2 * cg) / 3
 text(S[14], X0, TOP - 0.05, cw, 3.9, [
     {'runs': [('Assumptions', {'bold': True, 'color': BRAND, 'size': 12})], 'space': 5},
     {'runs': [N('Users have a smartphone and internet access.')], 'bullet': True},
-    {'runs': [N('A family physician is reachable (Abu Dhabi family physician programme).')], 'bullet': True},
-    {'runs': [N('Referral summaries can travel through existing Malaffi FHIR interfaces.')], 'bullet': True},
+    {'runs': [N('A family physician or a women’s health clinic is reachable.')], 'bullet': True},
+    {'runs': [N('Summaries can travel through existing Malaffi FHIR interfaces.')], 'bullet': True},
     {'runs': [N('Thiqa cardholders can book IFHAS; other residents reach routine checks through their insurer or family doctor.')], 'bullet': True},
-    {'runs': [N('Men engage with reproductive health more readily than with cardiometabolic screening (ADPHC observation).')], 'bullet': True},
-], size=10)
-text(S[14], X0 + cw + 0.3, TOP - 0.05, cw, 3.9, [
+    {'runs': [N('People want to know how their fertility is changing before they try, if it is private and without judgement.')], 'bullet': True},
+], size=9.4)
+text(S[14], X0 + cw + cg, TOP - 0.05, cw, 3.9, [
     {'runs': [('Limitations', {'bold': True, 'color': BRAND, 'size': 12})], 'space': 5},
-    {'runs': [N('Synthetic data only; expected outcomes labelled by the team, not yet by clinicians.')], 'bullet': True},
-    {'runs': [N('Rules v0.1 are not yet clinically validated or reviewed by a regulator.')], 'bullet': True},
-    {'runs': [N('Arabic text needs native clinical review.')], 'bullet': True},
-    {'runs': [N('The service directory is generic: there is no live booking yet.')], 'bullet': True},
-    {'runs': [N('The clinician inbox is a single-device demo.')], 'bullet': True},
-    {'runs': [N('Fairness is tested counterfactually; real-world equity needs a pilot.')], 'bullet': True},
-    {'runs': [N('The AI explainer depends on an external service; the app is complete without it.')], 'bullet': True},
-    {'runs': [N('Wiqaya is screening support, not a medical device.')], 'bullet': True},
-], size=10)
+    {'runs': [N('Synthetic data only; expected outcomes were labelled by the team, not yet by clinicians.')], 'bullet': True},
+    {'runs': [N('Rules v0.2 are not clinically validated or reviewed by a regulator.')], 'bullet': True},
+    {'runs': [N('Arabic text needs review by a native-speaking clinician.')], 'bullet': True},
+    {'runs': [N('Example providers are invented: no live booking.')], 'bullet': True},
+    {'runs': [N('The encrypted doctor link needs a small server store that is not switched on in the public demo; the clinician inbox is a single-device demo.')], 'bullet': True},
+    {'runs': [N('The report reader was tested on computer-printed synthetic reports only.')], 'bullet': True},
+    {'runs': [N('AI depends on an external service; the app is complete without it.')], 'bullet': True},
+    {'runs': [N('Screening support: not a diagnosis, not a medical device.')], 'bullet': True},
+], size=9.4)
+card(S[14], X0 + 2 * (cw + cg) - 0.1, TOP - 0.15, cw + 0.1, 3.95, fill=BRAND_SOFT, line=BRAND_LINE)
+text(S[14], X0 + 2 * (cw + cg) + 0.04, TOP - 0.05, cw - 0.16, 3.8, [
+    {'runs': [('Test data and model', {'bold': True, 'color': BRAND, 'size': 12})], 'space': 5},
+    {'runs': [B('No model is trained or fine-tuned. '), N('Fixed rules choose the step. Gemini is used as provided, only to explain and to read report photos.')], 'bullet': True},
+    {'runs': [B('89 synthetic cases '), N('(35 women’s), written by the team from guidelines, each with an expected step.')], 'bullet': True},
+    {'runs': [B('890 counterfactual runs: '), N('the same cases across 5 nationality groups × 2 languages.')], 'bullet': True},
+    {'runs': [B('89 missing-data runs: '), N('answers removed, 0 crashes.')], 'bullet': True},
+    {'runs': [B('Live AI sets: '), N('43 explainer and 48 companion tests; synthetic report pictures with 80 values.')], 'bullet': True},
+    {'runs': [B('10,000 invented people '), N('for the health-system view; 4 example people with months of history.')], 'bullet': True},
+    {'runs': [B('No real patient data '), N('at any point.')], 'bullet': True},
+], size=9.2)
 
 prs.save(OUT)
 print('saved', OUT)
