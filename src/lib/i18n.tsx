@@ -4,7 +4,7 @@ import { useStored } from './storage'
 import type { L10n, Lang } from './types'
 
 export const APP_NAME: L10n = { en: 'Wiqaya', ar: 'وقاية' }
-const FULL_TITLE: L10n = { en: "Wiqaya: private men's health check", ar: 'وقاية: فحص خاص لصحة الرجل' }
+const FULL_TITLE: L10n = { en: 'Wiqaya: reproductive potential over time', ar: 'وقاية: القدرة الإنجابية مع الوقت' }
 const DISCREET_TITLE: L10n = { en: 'Health check', ar: 'فحص صحي' }
 
 interface I18n {

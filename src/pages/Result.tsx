@@ -1,10 +1,12 @@
-import { ArrowRight, Check, ChevronDown, CircleCheck, FlaskConical, HeartPulse, Info, LockKeyhole, Pencil, Phone, RotateCcw, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, CircleCheck, CircleHelp, FlaskConical, HeartPulse, Info, Layers, ListChecks, LockKeyhole, Pencil, Phone, RotateCcw, Route, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Callout, Finding, LayerLabel, LevelIcon, LevelPill } from '../components/ui'
 import { AI_PROVIDER, askAi } from '../lib/ai'
 import type { AiProblem, AiResult } from '../lib/ai'
 import { AiProblemNote, AiText } from '../components/AiAnswer'
+import { PageNav } from '../components/PageNav'
+import type { PageNavItem } from '../components/PageNav'
 import { WhatShapes } from '../components/WhatShapes'
 import { assess, num } from '../lib/engine'
 import { sendFeedback } from '../lib/feedback'
@@ -20,6 +22,13 @@ import { bumpMetrics, EMPTY_METRICS, load, save, useStored, wipeAll } from '../l
 import type { Consent, Metrics } from '../lib/storage'
 import type { Answers, Assessment, FiredFlag } from '../lib/types'
 import { exampleAnswers } from './Example'
+
+const RESULT_NAV: PageNavItem[] = [
+  { id: 'step', label: { en: 'Your next step', ar: 'خطوتك التالية' }, icon: Route },
+  { id: 'found', label: { en: 'What we found', ar: 'ما وجدناه' }, icon: ListChecks },
+  { id: 'picture', label: { en: 'What shapes it', ar: 'ما يشكّل الصورة' }, icon: Layers },
+  { id: 'questions', label: { en: 'Common questions', ar: 'أسئلة شائعة' }, icon: CircleHelp },
+]
 
 export default function Result() {
   const { t } = useI18n()
@@ -97,7 +106,8 @@ export default function Result() {
   const showPrep = as.sex === 'male' && (as.level === 'specialist' || as.level === 'fertility' || as.flags.some((f) => f.id === 'AN_SEMEN'))
 
   return (
-    <div className="container-flow space-y-8 py-8 sm:py-10">
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-10 lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-8 lg:px-8">
+      <div id="step" className="stagger min-w-0 scroll-mt-24 space-y-8">
       {/* ---------- Summary ---------- */}
       {as.emergency ? (
         <section className="surface overflow-hidden border-red-300">
@@ -139,9 +149,9 @@ export default function Result() {
               </div>
             </div>
             <p className="text-body">{t(main.how)}</p>
-            <ul className="space-y-2">
+            <ul className="grid gap-2">
               {main.options.map((o, i) => (
-                <li key={i} className="flex gap-2.5 text-[15px] text-body">
+                <li key={i} className="flex gap-2.5 rounded-xl bg-brand-25 px-3.5 py-2.5 text-[15px] text-body ring-1 ring-brand-100">
                   <CircleCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-brand-600" strokeWidth={1.75} aria-hidden />
                   {t(o)}
                 </li>
@@ -223,7 +233,7 @@ export default function Result() {
       )}
 
       {/* ---------- Findings ---------- */}
-      <section className="space-y-3">
+      <section id="found" className="scroll-mt-24 space-y-3">
         <div className="flex items-end justify-between gap-3">
           <h2 className="heading">{t({ en: 'What we found', ar: 'ما وجدناه' })}</h2>
           <span className="text-sm text-muted tabular-nums">
@@ -254,8 +264,32 @@ export default function Result() {
         )}
       </section>
 
-      {as.eligible && <WhatShapes as={as} answers={answers} />}
+      {as.eligible && (
+        <div id="picture" className="scroll-mt-24">
+          <WhatShapes as={as} answers={answers} />
+        </div>
+      )}
 
+      {/* ---------- FAQ ---------- */}
+      <section id="questions" className="scroll-mt-24 space-y-3">
+        <h2 className="heading">{t({ en: 'Common questions', ar: 'أسئلة شائعة' })}</h2>
+        <div className="surface divide-y divide-line">
+          {(as.sex === 'female' ? NOTES.filter((n) => ['not_diagnosis', 'f_partner', 'f_age', 'f_amh', 'f_irregular', 'f_folic', 'who_sees'].includes(n.id)) : KB.filter((k) => !showPrep || k.id !== SEMEN_PREP.id)).map((k) => (
+            <details key={k.id} className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[15px] font-medium text-ink hover:bg-canvas/70">
+                {t(k.q)}
+                <ChevronDown className="h-4 w-4 shrink-0 text-faint transition-transform group-open:rotate-180" aria-hidden />
+              </summary>
+              <p className="px-5 pb-4 text-sm leading-relaxed text-muted">{t(k.a)}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      </div>
+
+      {/* ---------- Side column on wide screens; continues below on a phone ---------- */}
+      <aside className="mt-8 flex flex-col gap-6 lg:mt-0">
       <AiPanel as={as} />
 
       {/* ---------- Share ---------- */}
@@ -269,7 +303,7 @@ export default function Result() {
             })}
           </p>
         </div>
-        <div className="flex flex-col gap-2.5 sm:flex-row">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap lg:flex-col">
           <Link to={exampleId ? `/share?example=${exampleId}` : '/share'} className="btn btn-primary">
             {t({ en: 'Prepare a summary', ar: 'جهّز ملخصاً' })}
             <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
@@ -299,22 +333,6 @@ export default function Result() {
         </Callout>
       )}
 
-      {/* ---------- FAQ ---------- */}
-      <section className="space-y-3">
-        <h2 className="heading">{t({ en: 'Common questions', ar: 'أسئلة شائعة' })}</h2>
-        <div className="surface divide-y divide-line">
-          {(as.sex === 'female' ? NOTES.filter((n) => ['not_diagnosis', 'f_partner', 'f_age', 'f_amh', 'f_irregular', 'f_folic', 'who_sees'].includes(n.id)) : KB.filter((k) => !showPrep || k.id !== SEMEN_PREP.id)).map((k) => (
-            <details key={k.id} className="group">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-[15px] font-medium text-ink hover:bg-canvas/70">
-                {t(k.q)}
-                <ChevronDown className="h-4 w-4 shrink-0 text-faint transition-transform group-open:rotate-180" aria-hidden />
-              </summary>
-              <p className="px-5 pb-4 text-sm leading-relaxed text-muted">{t(k.a)}</p>
-            </details>
-          ))}
-        </div>
-      </section>
-
       <Callout tone="danger" icon={TriangleAlert} title={t({ en: 'Get help quickly if…', ar: 'اطلب المساعدة بسرعة إذا…' })}>
         <ul className="space-y-1">
           {safetyNet(as.sex).map((s, i) => (
@@ -331,6 +349,8 @@ export default function Result() {
           {t({ en: 'Delete all my data from this device', ar: 'احذف جميع بياناتي من هذا الجهاز' })}
         </button>
       </div>
+      <PageNav className="sticky top-24 hidden lg:block" items={RESULT_NAV} />
+      </aside>
     </div>
   )
 }

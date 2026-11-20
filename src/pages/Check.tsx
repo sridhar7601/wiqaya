@@ -31,6 +31,8 @@ export default function Check() {
   const [redGate, setRedGate] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [scanned, setScanned] = useState(false)
+  // Which way the next question slides in.
+  const [dir, setDir] = useState<'next' | 'back'>('next')
 
   const list = useMemo(() => visibleQuestions(answers), [answers])
   const pos = Math.max(0, list.findIndex((x) => x.id === currentId))
@@ -78,6 +80,7 @@ export default function Check() {
     }
     setRedGate(false)
     setShowHelp(false)
+    setDir('next')
     const fresh = visibleQuestions(a)
     const i = fresh.findIndex((x) => x.id === q.id)
     if (i >= fresh.length - 1) finish()
@@ -87,6 +90,7 @@ export default function Check() {
   const goBack = () => {
     setRedGate(false)
     setShowHelp(false)
+    setDir('back')
     if (scanning) {
       setScanning(false)
       return
@@ -145,7 +149,7 @@ export default function Check() {
     const emergency = arr(answers, 'urgent_symptoms').some((v) => v === 'sudden_pain' || v === 'ectopic_signs')
     return (
       <div className="container-flow py-10">
-        <div className="surface overflow-hidden border-red-200">
+        <div className="surface anim-pop overflow-hidden border-red-200">
           <div className="space-y-5 p-6 sm:p-8">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 ring-8 ring-red-50/60">
               <TriangleAlert className="h-6 w-6" strokeWidth={1.75} aria-hidden />
@@ -199,32 +203,34 @@ export default function Check() {
   }
 
   return (
-    <div className="container-flow py-6 sm:py-10">
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6 sm:py-10 lg:grid lg:max-w-5xl lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10 lg:px-8">
+      <SectionRail list={list} pos={pos} />
+      <div className="min-w-0">
       {/* Progress */}
       <div className="mb-6 space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-brand-700">{t(SECTIONS[q.section])}</p>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted tabular-nums">
-              {t({ en: 'Question', ar: 'السؤال' })} {pos + 1} {t({ en: 'of', ar: 'من' })} {list.length}
+          <p className="eyebrow">{t(SECTIONS[q.section])}</p>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-ink tabular-nums ring-1 ring-line" aria-label={`${t({ en: 'Question', ar: 'السؤال' })} ${pos + 1} ${t({ en: 'of', ar: 'من' })} ${list.length}`}>
+              {pos + 1} / {list.length}
             </span>
-            <Link to="/" className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-white hover:text-ink" title={t({ en: 'Save and exit', ar: 'حفظ وخروج' })}>
+            <Link to="/" className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-white hover:text-ink" title={t({ en: 'Save and exit', ar: 'حفظ وخروج' })}>
               <X className="h-4 w-4" aria-hidden />
               <span className="sr-only">{t({ en: 'Save and exit', ar: 'حفظ وخروج' })}</span>
             </Link>
           </div>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
-          <div className="h-full rounded-full bg-brand-600 transition-[width] duration-300" style={{ width: `${pct}%` }} />
+        <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+          <div className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-700 transition-[width] duration-500 ease-out rtl:bg-gradient-to-l" style={{ width: `${pct}%` }} />
         </div>
       </div>
 
       {q.id === 'semen' && scanning && <ReportReader onUse={applyReport} onCancel={() => setScanning(false)} />}
 
       {/* Question */}
-      <div className={`surface surface-pad space-y-6 ${q.id === 'semen' && scanning ? 'hidden' : ''}`}>
+      <div key={q.id} className={`surface surface-pad space-y-6 ${dir === 'back' ? 'anim-back' : 'anim-next'} ${q.id === 'semen' && scanning ? 'hidden' : ''}`}>
         <div className="space-y-3">
-          <h1 className="text-[22px] leading-snug font-semibold tracking-tight text-ink sm:text-2xl">{t(q.text)}</h1>
+          <h1 className="text-2xl leading-tight font-bold tracking-[-0.02em] text-ink sm:text-[32px]">{t(q.text)}</h1>
           {q.sensitive && (
             <p className="inline-flex items-center gap-1.5 text-sm text-muted">
               <LockKeyhole className="h-4 w-4 text-brand-600" aria-hidden />
@@ -243,13 +249,13 @@ export default function Check() {
         </div>
 
         {q.type === 'single' && (
-          <div className="grid gap-2.5" role="radiogroup" aria-label={t(q.text)}>
+          <div className={`stagger grid gap-2.5 ${q.options!.length > 3 ? 'lg:grid-cols-2' : ''}`} role="radiogroup" aria-label={t(q.text)}>
             {q.options!.map((o) => {
               const on = answers[q.id] === o.value
               return (
                 <button key={o.value} type="button" role="radio" className="option" aria-checked={on} onClick={() => pickSingle(o.value)}>
                   <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${on ? 'border-brand-700' : 'border-line-strong'}`} aria-hidden>
-                    {on && <span className="h-2.5 w-2.5 rounded-full bg-brand-700" />}
+                    {on && <span className="anim-pop h-2.5 w-2.5 rounded-full bg-brand-700" />}
                   </span>
                   {t(o.label)}
                 </button>
@@ -259,14 +265,14 @@ export default function Check() {
         )}
 
         {q.type === 'multi' && (
-          <div className="grid gap-2.5">
-            <p className="small">{t({ en: 'Select all that apply.', ar: 'اختر كل ما ينطبق.' })}</p>
+          <div className={`stagger grid gap-2.5 ${q.options!.length > 3 ? 'lg:grid-cols-2' : ''}`}>
+            <p className="small col-span-full">{t({ en: 'Select all that apply.', ar: 'اختر كل ما ينطبق.' })}</p>
             {q.options!.map((o) => {
               const on = arr(answers, q.id).includes(o.value)
               return (
                 <button key={o.value} type="button" className="option" aria-pressed={on} onClick={() => toggleMulti(o.value)}>
                   <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${on ? 'border-brand-700 bg-brand-700 text-white' : 'border-line-strong bg-white'}`} aria-hidden>
-                    {on && <CheckIcon className="h-3.5 w-3.5" strokeWidth={3} />}
+                    {on && <CheckIcon className="anim-pop h-3.5 w-3.5" strokeWidth={3} />}
                   </span>
                   {t(o.label)}
                 </button>
@@ -346,7 +352,55 @@ export default function Check() {
           {t({ en: 'Privacy', ar: 'الخصوصية' })}
         </Link>
       </p>
+      </div>
     </div>
+  )
+}
+
+/** Wide screens: the parts of the check down the side, with the current one filling as it is answered. */
+function SectionRail({ list, pos }: { list: Question[]; pos: number }) {
+  const { t } = useI18n()
+  const ids = [...new Set(list.map((x) => x.section))]
+  const at = ids.indexOf(list[pos].section)
+  return (
+    <aside className="hidden lg:block">
+      <div className="sticky top-24 space-y-4">
+        <p className="eyebrow">{t({ en: 'Your check', ar: 'فحصك' })}</p>
+        <ol className="space-y-1">
+          {ids.map((id, i) => {
+            const first = list.findIndex((x) => x.section === id)
+            const total = list.filter((x) => x.section === id).length
+            const done = i < at
+            const on = i === at
+            const inSection = on ? pos - first + 1 : 0
+            return (
+              <li key={id} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-300 ${on ? 'bg-white shadow-sm ring-1 ring-line' : ''}`}>
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors duration-300 ${done ? 'bg-brand-600 text-white' : on ? 'bg-brand-800 text-white' : 'bg-white text-faint ring-1 ring-line'}`}>
+                  {done ? <CheckIcon className="anim-pop h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block truncate text-sm font-semibold ${on || done ? 'text-ink' : 'text-muted'}`}>{t(SECTIONS[id])}</span>
+                  {on && (
+                    <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-line">
+                      <span className="block h-full rounded-full bg-brand-600 transition-[width] duration-500 ease-out" style={{ width: `${(inSection / total) * 100}%` }} />
+                    </span>
+                  )}
+                </span>
+                {on && (
+                  <span className="text-xs font-semibold text-muted tabular-nums">
+                    {inSection}/{total}
+                  </span>
+                )}
+              </li>
+            )
+          })}
+        </ol>
+        <p className="flex items-start gap-2 rounded-xl bg-white/70 px-3 py-2.5 text-xs leading-snug text-muted ring-1 ring-line">
+          <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-600" aria-hidden />
+          {t({ en: 'Saved only on this device. You can leave and come back.', ar: 'محفوظة على هذا الجهاز فقط، ويمكنك المغادرة والعودة.' })}
+        </p>
+      </div>
+    </aside>
   )
 }
 
@@ -356,71 +410,52 @@ function ConsentScreen({ onAccept }: { onAccept: (aiOptIn: boolean) => void }) {
   const [ai, setAi] = useState(false)
 
   const points = [
-    {
-      icon: MessageSquare,
-      title: { en: 'What we ask', ar: 'ما نسأل عنه' },
-      body: {
-        en: 'About 20 short questions on your health, daily life and private health. Sensitive questions always have “Prefer not to say”.',
-        ar: 'نحو 20 سؤالاً قصيراً عن صحتك ونمط حياتك وصحتك الخاصة. تتضمن الأسئلة الحساسة دائماً «أفضّل عدم الإجابة».',
-      },
-    },
-    {
-      icon: LockKeyhole,
-      title: { en: 'Your answers stay on this device', ar: 'تبقى إجاباتك على هذا الجهاز' },
-      body: { en: 'No account, no name, no phone number, no ID number.', ar: 'لا حساب ولا اسم ولا رقم هاتف ولا رقم هوية.' },
-    },
-    {
-      icon: Send,
-      title: { en: 'Sharing is your choice', ar: 'المشاركة باختيارك' },
-      body: { en: 'You can send a summary to a doctor. You choose what goes in it, and nothing is sent until you press Send.', ar: 'يمكنك إرسال ملخص إلى طبيب. أنت من يحدد ما يتضمنه، ولا يُرسل شيء حتى تضغط «إرسال».' },
-    },
-    {
-      icon: Ban,
-      title: { en: 'What we never do', ar: 'ما لا نفعله أبداً' },
-      body: { en: 'Sell your data, share it with an employer or insurer, or use it for advertising.', ar: 'بيع بياناتك، أو مشاركتها مع صاحب العمل أو شركة التأمين، أو استخدامها للإعلانات.' },
-    },
-    {
-      icon: Stethoscope,
-      title: { en: 'Screening, not diagnosis', ar: 'فحص أولي، لا تشخيص' },
-      body: { en: 'This check points out signals and the right place to go. Only a clinician can diagnose.', ar: 'يبيّن هذا الفحص المؤشرات والمكان المناسب للتوجّه إليه، والتشخيص للطبيب فقط.' },
-    },
+    { icon: MessageSquare, title: { en: 'About 20 short questions', ar: 'نحو 20 سؤالاً قصيراً' }, body: { en: 'You can skip any private one.', ar: 'يمكنك تخطي أي سؤال خاص.' } },
+    { icon: LockKeyhole, title: { en: 'Stays on this device', ar: 'تبقى على هذا الجهاز' }, body: { en: 'No account, name or ID.', ar: 'لا حساب ولا اسم ولا هوية.' } },
+    { icon: Send, title: { en: 'Sharing is your choice', ar: 'المشاركة باختيارك' }, body: { en: 'Nothing is sent until you press Send.', ar: 'لا يُرسل شيء حتى تضغط «إرسال».' } },
+    { icon: Ban, title: { en: 'Never sold or shared', ar: 'لا تُباع ولا تُشارك' }, body: { en: 'Not with employers, insurers or advertisers.', ar: 'لا مع أصحاب العمل ولا شركات التأمين ولا المعلنين.' } },
+    { icon: Stethoscope, title: { en: 'Screening, not diagnosis', ar: 'فحص أولي، لا تشخيص' }, body: { en: 'Only a clinician can diagnose.', ar: 'التشخيص للطبيب فقط.' } },
   ]
 
   return (
-    <div className="container-flow py-10">
-      <div className="surface overflow-hidden">
-        <div className="space-y-6 p-6 sm:p-8">
-          <div className="space-y-3">
-            <span className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-              <ShieldCheck className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+    <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-10 lg:max-w-5xl lg:px-8">
+      <div className="surface anim-rise overflow-hidden lg:grid lg:grid-cols-[1.25fr_1fr]">
+        <div className="space-y-6 p-5 sm:p-8">
+          <div className="flex items-center gap-4">
+            <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-800 text-white">
+              <ShieldCheck className="h-7 w-7" strokeWidth={1.75} aria-hidden />
             </span>
-            <h1 className="title">{t({ en: 'Before we start', ar: 'قبل أن نبدأ' })}</h1>
-            <p className="text-muted">{t({ en: 'A one-minute read on how your information is handled.', ar: 'قراءة سريعة لدقيقة واحدة حول كيفية التعامل مع معلوماتك.' })}</p>
+            <div>
+              <h1 className="title">{t({ en: 'Before we start', ar: 'قبل أن نبدأ' })}</h1>
+              <p className="text-muted">{t({ en: 'Five things to know. Twenty seconds.', ar: 'خمسة أمور تهمّك، في عشرين ثانية.' })}</p>
+            </div>
           </div>
-          <ul className="space-y-4">
-            {points.map((p) => (
-              <li key={p.title.en} className="flex gap-3.5">
-                <p.icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" strokeWidth={1.75} aria-hidden />
+          <ul className="stagger grid grid-cols-2 gap-2.5 sm:gap-3">
+            {points.map((p, i) => (
+              <li key={p.title.en} className={`flex flex-col gap-2 rounded-2xl bg-canvas p-4 ring-1 ring-line ${i === points.length - 1 ? 'col-span-2 flex-row items-center gap-3' : ''}`}>
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-brand-700 ring-1 ring-line">
+                  <p.icon className="h-[18px] w-[18px]" strokeWidth={1.9} aria-hidden />
+                </span>
                 <div>
-                  <p className="text-[15px] font-semibold text-ink">{t(p.title)}</p>
-                  <p className="text-sm text-muted">{t(p.body)}</p>
+                  <p className="text-[15px] leading-snug font-bold text-ink">{t(p.title)}</p>
+                  <p className="text-[13px] leading-snug text-muted">{t(p.body)}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
-        <div className="space-y-4 border-t border-line bg-canvas p-6 sm:p-8">
+        <div className="flex flex-col justify-center space-y-4 border-t border-line bg-canvas p-6 sm:p-8 lg:border-s lg:border-t-0">
           <Checkbox checked={agree} onChange={setAgree}>
             {t({ en: 'I am 18 or older, I understand this is screening and not a diagnosis, and I agree to start.', ar: 'عمري 18 عاماً أو أكثر، وأفهم أن هذا فحص أولي وليس تشخيصاً، وأوافق على البدء.' })}
           </Checkbox>
           <Checkbox checked={ai} onChange={setAi}>
             <span className="font-medium text-ink">{t({ en: 'Optional: ', ar: 'اختياري: ' })}</span>
             {t({
-              en: 'let the AI helper explain my result in plain words. Only a summary of the result is sent, never my answers or identity.',
-              ar: 'اسمح للمساعد الذكي بشرح نتيجتي بكلمات بسيطة. يُرسل ملخص النتيجة فقط، ولا تُرسل إجاباتي أو هويتي أبداً.',
+              en: 'let the AI helper explain my result in plain words. Only a summary of the result and whether this is a woman’s or a man’s check is sent, never my other answers or identity.',
+              ar: 'اسمح للمساعد الذكي بشرح نتيجتي بكلمات بسيطة. يُرسل ملخص النتيجة وهل الفحص لامرأة أم لرجل فقط، ولا تُرسل إجاباتي الأخرى أو هويتي أبداً.',
             })}
           </Checkbox>
-          <div className="flex flex-col-reverse items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col-reverse items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between lg:flex-col-reverse lg:items-stretch">
             <Link to="/privacy" className="link text-center text-sm">
               {t({ en: 'Read the full privacy notice', ar: 'اقرأ إشعار الخصوصية كاملاً' })}
             </Link>

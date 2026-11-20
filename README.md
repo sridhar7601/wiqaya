@@ -23,7 +23,7 @@ Example people with months of history: `/#/try/mariam`, `/#/try/fatima`, `/#/try
 | Safety-first intake | Rules | Red-flag symptoms are asked right after age. Any red flag shows emergency or urgent advice straight away. |
 | Lab report reader (optional) | AI, then code, then person | The AI transcribes numbers from a photo (`infra/ai/report.mjs`). Code straightens the picture first (`src/lib/deskew.ts`), then cross-checks the numbers against each other. The person confirms every value. |
 | Data-quality gate | Rules | Catches missing, impossible and inconsistent values, ignores them, and asks the person to check. |
-| Risk-signal rules | Rules | 31 deterministic rules (`src/lib/engine.ts`). Each shows the triggering answer and a guideline source. |
+| Risk-signal rules | Rules | 51 deterministic rules, 20 of them for women only and 13 for men only (`src/lib/engine.ts`). Each shows the triggering answer and a guideline source. |
 | Triage and navigation | Rules | One of five next steps; the highest wins. Offers lower-friction options. |
 | Plain-language explainer (optional) | AI | Rewrites the result. It cannot change the step, and output guardrails block diagnosis claims and doses (`infra/ai/index.mjs`). |
 | User-controlled hand-off | Person | The person picks what to share. An HL7 FHIR R4 bundle with a Consent resource (`src/lib/referral.ts`) is encrypted on the phone (`src/lib/crypto.ts`) and stored as ciphertext (`infra/server/share.mjs`). |

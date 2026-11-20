@@ -1,5 +1,5 @@
 import { CircleHelp, Lock, Sprout, Library } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useI18n } from '../lib/i18n'
 import type { Answers, Assessment, FiredFlag, L10n } from '../lib/types'
 import { Sources } from './ui'
@@ -43,18 +43,9 @@ export function limits({ as, answers, results }: ShapesInput): L10n[] {
   return out
 }
 
-function Column({ icon: Icon, title, children }: { icon: typeof Lock; title: string; children: ReactNode }) {
-  return (
-    <div className="space-y-2.5 p-5">
-      <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <Icon className="h-4 w-4 text-brand-600" aria-hidden />
-        {title}
-      </p>
-      {children}
-    </div>
-  )
-}
+type Tab = 'can' | 'cannot' | 'unknown' | 'evidence'
 
+/** Four short tabs instead of four columns of text: one thing to read at a time. */
 export function WhatShapes(p: ShapesInput) {
   const { t } = useI18n()
   const flags = (p.flags ?? p.as.flags).filter((f) => !f.emergency)
@@ -62,51 +53,69 @@ export function WhatShapes(p: ShapesInput) {
   const cannot = flags.filter((f) => !f.changeable)
   const age = typeof p.answers.age === 'number' ? p.answers.age : undefined
   const sources = [...new Set(flags.flatMap((f) => f.sources))]
-  const list = (fs: FiredFlag[], empty: L10n) =>
-    fs.length ? (
-      <ul className="space-y-1.5 text-sm text-body">
-        {fs.map((f) => (
-          <li key={f.id} className="leading-snug">
-            {t(f.title)}
+  const unknown = limits(p)
+  const [tab, setTab] = useState<Tab>(can.length ? 'can' : 'unknown')
+
+  const TABS: { id: Tab; icon: typeof Lock; label: L10n; n: number }[] = [
+    { id: 'can', icon: Sprout, label: { en: 'Can change', ar: 'يمكن تغييره' }, n: can.length },
+    { id: 'cannot', icon: Lock, label: { en: 'Cannot change', ar: 'لا يمكن تغييره' }, n: cannot.length + (age !== undefined ? 1 : 0) },
+    { id: 'unknown', icon: CircleHelp, label: { en: 'Not known yet', ar: 'غير معروف بعد' }, n: unknown.length },
+    { id: 'evidence', icon: Library, label: { en: 'Evidence', ar: 'الأدلة' }, n: sources.length },
+  ]
+  const rows = (items: string[], empty: L10n) =>
+    items.length ? (
+      <ul className="stagger space-y-2">
+        {items.map((x) => (
+          <li key={x} className="flex gap-3 rounded-xl bg-canvas px-4 py-3 text-[15px] leading-snug text-body ring-1 ring-line">
+            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" aria-hidden />
+            {x}
           </li>
         ))}
       </ul>
     ) : (
-      <p className="text-sm text-muted">{t(empty)}</p>
+      <p className="rounded-xl bg-canvas px-4 py-3 text-[15px] text-muted ring-1 ring-line">{t(empty)}</p>
     )
 
   return (
     <section className="surface overflow-hidden">
-      <div className="space-y-1 border-b border-line px-5 py-4">
+      <div className="space-y-1 px-5 pt-5 sm:px-6 sm:pt-6">
         <h2 className="heading">{t({ en: 'What shapes this picture', ar: 'ما الذي يشكّل هذه الصورة' })}</h2>
-        <p className="text-sm text-muted">
-          {t({
-            en: 'There is no fertility score here on purpose. These are the things behind your next step, and what is still unknown.',
-            ar: 'لا توجد هنا درجة للخصوبة عن قصد. هذه هي الأمور التي تقف وراء خطوتك التالية، وما لا يزال مجهولاً.',
-          })}
-        </p>
+        <p className="text-sm text-muted">{t({ en: 'No fertility score, on purpose.', ar: 'بلا درجة للخصوبة، عن قصد.' })}</p>
       </div>
-      <div className="grid divide-y divide-line md:grid-cols-2 md:divide-x md:divide-y-0 rtl:md:divide-x-reverse">
-        <Column icon={Sprout} title={t({ en: 'You can change or treat', ar: 'يمكنك تغييره أو علاجه' })}>
-          {list(can, { en: 'Nothing here needs changing now.', ar: 'لا شيء هنا يحتاج إلى تغيير الآن.' })}
-        </Column>
-        <Column icon={Lock} title={t({ en: 'You cannot change, but can plan around', ar: 'لا يمكنك تغييره، لكن يمكنك التخطيط حوله' })}>
-          {age !== undefined && <p className="text-sm text-body">{t({ en: `Your age (${age}). Fertility changes with age for everyone, at different speeds.`, ar: `عمرك (${age}). تتغير الخصوبة مع العمر لدى الجميع، وبسرعات مختلفة.` })}</p>}
-          {list(cannot, { en: 'No fixed factors found.', ar: 'لم نجد عوامل ثابتة.' })}
-        </Column>
+      <div className="-mx-px mt-4 flex gap-1.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden" role="tablist" aria-label={t({ en: 'What shapes this picture', ar: 'ما الذي يشكّل هذه الصورة' })}>
+        {TABS.map((x) => {
+          const on = tab === x.id
+          return (
+            <button
+              key={x.id}
+              type="button"
+              role="tab"
+              aria-selected={on}
+              onClick={() => setTab(x.id)}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition-all duration-200 ${on ? 'bg-brand-800 text-white shadow-sm' : 'bg-canvas text-body ring-1 ring-line hover:bg-brand-25'}`}
+            >
+              <x.icon className="h-4 w-4" aria-hidden />
+              {t(x.label)}
+              <span className={`rounded-full px-1.5 text-xs tabular-nums ${on ? 'bg-white/20' : 'bg-white text-muted ring-1 ring-line'}`}>{x.n}</span>
+            </button>
+          )
+        })}
       </div>
-      <div className="grid divide-y divide-line border-t border-line md:grid-cols-2 md:divide-x md:divide-y-0 rtl:md:divide-x-reverse">
-        <Column icon={CircleHelp} title={t({ en: 'What this picture does not know', ar: 'ما لا تعرفه هذه الصورة' })}>
-          <ul className="list-disc space-y-1.5 ps-4 text-sm text-body">
-            {limits(p).map((l) => (
-              <li key={l.en}>{t(l)}</li>
-            ))}
-          </ul>
-        </Column>
-        <Column icon={Library} title={t({ en: 'The evidence behind it', ar: 'الأدلة التي يستند إليها' })}>
-          {sources.length ? <Sources ids={sources} /> : <p className="text-sm text-muted">{t({ en: 'No findings, so no sources to show.', ar: 'لا توجد مؤشرات، لذا لا مصادر لعرضها.' })}</p>}
-          <p className="text-xs text-faint">{t({ en: 'Published guidelines and studies. Fixed rules apply them; the AI does not.', ar: 'إرشادات ودراسات منشورة. تطبّقها قواعد ثابتة، لا الذكاء الاصطناعي.' })}</p>
-        </Column>
+      <div key={tab} className="anim-next space-y-3 p-5 sm:p-6" role="tabpanel">
+        {tab === 'can' && rows(can.map((f) => t(f.title)), { en: 'Nothing here needs changing now.', ar: 'لا شيء هنا يحتاج إلى تغيير الآن.' })}
+        {tab === 'cannot' &&
+          rows(
+            [...(age !== undefined ? [t({ en: `Your age (${age}). Fertility changes with age for everyone, at different speeds.`, ar: `عمرك (${age}). تتغير الخصوبة مع العمر لدى الجميع، وبسرعات مختلفة.` })] : []), ...cannot.map((f) => t(f.title))],
+            { en: 'No fixed factors found.', ar: 'لم نجد عوامل ثابتة.' },
+          )}
+        {tab === 'cannot' && <p className="text-xs text-faint">{t({ en: 'You cannot change these, but you can plan around them.', ar: 'لا يمكنك تغيير هذه الأمور، لكن يمكنك التخطيط حولها.' })}</p>}
+        {tab === 'unknown' && rows(unknown.map((l) => t(l)), { en: 'Nothing listed.', ar: 'لا شيء.' })}
+        {tab === 'evidence' && (
+          <>
+            {sources.length ? <Sources ids={sources} /> : <p className="text-sm text-muted">{t({ en: 'No findings, so no sources to show.', ar: 'لا توجد مؤشرات، لذا لا مصادر لعرضها.' })}</p>}
+            <p className="text-xs text-faint">{t({ en: 'Published guidelines and studies. Fixed rules apply them; the AI does not.', ar: 'إرشادات ودراسات منشورة. تطبّقها قواعد ثابتة، لا الذكاء الاصطناعي.' })}</p>
+          </>
+        )}
       </div>
     </section>
   )

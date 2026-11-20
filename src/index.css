@@ -82,14 +82,18 @@ body {
   }
 
   .surface {
-    @apply rounded-xl border border-line bg-white shadow-xs;
+    @apply rounded-2xl border border-line bg-white shadow-xs;
+  }
+  /* A card that is a link or a button: it lifts when pointed at and settles when pressed. */
+  .surface-link {
+    @apply transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg active:translate-y-0 active:shadow-xs;
   }
   .surface-pad {
     @apply p-5 sm:p-6;
   }
 
   .btn {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-[15px] font-semibold whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 disabled:pointer-events-none disabled:opacity-45;
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold whitespace-nowrap transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-4 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45;
   }
   .btn-lg {
     @apply h-12 px-5 text-base;
@@ -98,7 +102,7 @@ body {
     @apply h-9 px-3 text-sm;
   }
   .btn-primary {
-    @apply bg-brand-800 text-white shadow-xs hover:bg-brand-900 focus-visible:ring-brand-100;
+    @apply bg-brand-800 text-white shadow-sm hover:-translate-y-px hover:bg-brand-900 hover:shadow-lg focus-visible:ring-brand-100;
   }
   .btn-secondary {
     @apply border border-line-strong bg-white text-ink shadow-xs hover:bg-canvas focus-visible:ring-slate-100;
@@ -110,7 +114,7 @@ body {
     @apply bg-red-600 text-white shadow-xs hover:bg-red-700 focus-visible:ring-red-100;
   }
   .btn-ai {
-    @apply bg-ai-600 text-white shadow-xs hover:bg-ai-700 focus-visible:ring-ai-100;
+    @apply bg-ai-600 text-white shadow-sm hover:-translate-y-px hover:bg-ai-700 hover:shadow-lg focus-visible:ring-ai-100;
   }
 
   .input {
@@ -122,27 +126,28 @@ body {
 
   /* Answer rows in the check-in */
   .option {
-    @apply flex w-full items-center gap-3 rounded-lg border border-line bg-white px-4 py-3.5 text-start text-[15px] font-medium text-ink shadow-xs transition-colors duration-150 hover:border-brand-200 hover:bg-brand-25 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100;
+    @apply flex w-full items-center gap-3 rounded-xl border border-line bg-white px-4 py-3.5 text-start text-[15px] font-medium text-ink shadow-xs transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out hover:border-brand-200 hover:bg-brand-25 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100 active:scale-[0.985];
   }
   .option[aria-checked="true"],
   .option[aria-pressed="true"] {
     @apply border-brand-600 bg-brand-25 ring-1 ring-brand-600;
   }
 
+  /* Type scale: four clearly different sizes, so a page can be scanned by its headings alone. */
   .eyebrow {
-    @apply text-[13px] font-semibold tracking-wide text-brand-700;
+    @apply inline-flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-brand-600 uppercase before:h-px before:w-6 before:bg-brand-500;
   }
   .display {
-    @apply text-[32px] leading-[1.15] font-semibold tracking-tight text-ink sm:text-[44px];
+    @apply text-[40px] leading-[1.05] font-bold tracking-[-0.03em] text-ink sm:text-[56px] lg:text-[64px];
   }
   .title {
-    @apply text-2xl leading-tight font-semibold tracking-tight text-ink sm:text-[28px];
+    @apply text-[28px] leading-[1.12] font-bold tracking-[-0.02em] text-ink sm:text-[40px];
   }
   .heading {
-    @apply text-lg leading-snug font-semibold text-ink;
+    @apply text-xl leading-snug font-bold tracking-[-0.01em] text-ink;
   }
   .lead {
-    @apply text-[17px] leading-relaxed text-body sm:text-lg;
+    @apply text-lg leading-relaxed text-muted sm:text-xl;
   }
   .small {
     @apply text-sm text-muted;
@@ -175,4 +180,179 @@ body {
 
 details > summary::-webkit-details-marker {
   display: none;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+@keyframes slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes slide-back {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+}
+@keyframes float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--len, 600);
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(24 118 107 / 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(24 118 107 / 0);
+  }
+}
+
+/* A page fades and rises in when the route changes. */
+.page-enter {
+  animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-rise {
+  animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0s);
+}
+.anim-pop {
+  animation: pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0s);
+}
+.anim-fade {
+  animation: fade 0.5s ease-out both;
+  animation-delay: var(--d, 0s);
+}
+.anim-next {
+  animation: slide-next 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.anim-back {
+  animation: slide-back 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+[dir="rtl"] .anim-next {
+  animation-name: slide-back;
+}
+[dir="rtl"] .anim-back {
+  animation-name: slide-next;
+}
+.anim-float {
+  animation: float 7s ease-in-out infinite;
+}
+.anim-draw {
+  stroke-dasharray: var(--len, 600);
+  animation: draw 1.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0s);
+}
+.anim-grow-x {
+  transform-origin: left;
+  animation: grow-x 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--d, 0s);
+}
+[dir="rtl"] .anim-grow-x {
+  transform-origin: right;
+}
+.pulse-ring {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+/* Children arrive one after another. */
+.stagger > * {
+  animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.stagger > *:nth-child(6) { animation-delay: 0.34s; }
+.stagger > *:nth-child(n + 7) { animation-delay: 0.4s; }
+
+/* Sections ease in as they scroll into view (see components/motion.tsx). */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--d, 0s);
+}
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Answers and accordions open smoothly where the browser supports it. */
+:root {
+  interpolate-size: allow-keywords;
+}
+details::details-content {
+  block-size: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    block-size 0.3s ease,
+    opacity 0.3s ease,
+    content-visibility 0.3s allow-discrete;
+}
+details[open]::details-content {
+  block-size: auto;
+  opacity: 1;
+}
+
+/* Soft colour behind the first screen of a page. */
+.hero-glow {
+  background:
+    radial-gradient(60% 55% at 85% 10%, rgb(43 138 126 / 0.16), transparent 70%),
+    radial-gradient(45% 45% at 5% 95%, rgb(109 79 214 / 0.1), transparent 70%),
+    #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }

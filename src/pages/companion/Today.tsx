@@ -1,4 +1,4 @@
-import { ArrowRight, BellPlus, CalendarClock, ClipboardCheck, Flame, HeartHandshake, Microscope, Phone, ScanLine, Share2, Smartphone, ThermometerSun } from 'lucide-react'
+import { ArrowRight, BellPlus, CalendarClock, ClipboardCheck, Flame, HeartHandshake, Phone, ScanLine, Share2, Smartphone, ThermometerSun } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Link } from 'react-router'
 import { CycleRing, Sparkline } from '../../components/charts'
@@ -44,9 +44,14 @@ export default function Today() {
 
   return (
     <CompanionShell
+      wide
       title={t({ en: 'Today', ar: 'اليوم' })}
       intro={<span>{fmtDay(c.today, lang)}</span>}
     >
+      {/* Phone: one column in reading order. Wide screens: the plan on the left, this week's numbers on the right. */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start">
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-6">
+          <div className="order-1 empty:hidden">
       {/* ---------- Next step ---------- */}
       {v.emergency ? (
         <section className="surface overflow-hidden border-red-300">
@@ -127,6 +132,34 @@ export default function Today() {
         </section>
       )}
 
+          </div>
+          <div className="order-5 empty:hidden">
+      {/* ---------- Findings over time ---------- */}
+      {newer.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="heading">{t({ en: 'What the rules see over time', ar: 'ما تراه القواعد مع مرور الوقت' })}</h2>
+            <Link to="/me/results" className="text-sm font-semibold text-brand-700 hover:underline">
+              {t({ en: 'All results', ar: 'كل النتائج' })}
+            </Link>
+          </div>
+          <div className="surface divide-y divide-line overflow-hidden">
+            {newer.slice(0, 4).map((f, i) => (
+              <Finding key={f.id} flag={f} defaultOpen={i === 0} />
+            ))}
+          </div>
+        </section>
+      )}
+
+          </div>
+          <div className="order-6 empty:hidden">
+      {/* ---------- Do more ---------- */}
+      {!v.emergency && <CompanionAi basis={planPayload(v, lang)} flagIds={v.flags.map((f) => f.id)} sex={v.base.sex} />}
+
+          </div>
+        </div>
+        <aside className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-6">
+          <div className="order-2">
       {/* ---------- 90-day window ---------- */}
       <section className="surface surface-pad space-y-4">
         <div className="flex items-center gap-5">
@@ -215,8 +248,10 @@ export default function Today() {
         )}
       </section>
 
+          </div>
+          <div className="order-3">
       {/* ---------- This week ---------- */}
-      <section className="surface surface-pad flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="surface surface-pad flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch">
         <div className="flex items-start gap-3">
           <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
             <ClipboardCheck className="h-5 w-5" strokeWidth={1.75} aria-hidden />
@@ -237,31 +272,15 @@ export default function Today() {
         </Link>
       </section>
 
+          </div>
+          <div className="order-4 flex flex-col gap-6 empty:hidden">
       <HeatCard city={c.work?.city} allowed={!!c.work?.heatAlerts && consents.is('weather') === true} outdoor={!!c.work && ['outdoor', 'oil_gas', 'agri_pest', 'metal_weld', 'driver', 'security', 'kitchen_laundry'].includes(c.work.occupation)} />
 
       {c.signals.length >= 14 && <PhoneTile signals={c.signals} />}
 
-      {/* ---------- Findings over time ---------- */}
-      {newer.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-end justify-between gap-3">
-            <h2 className="heading">{t({ en: 'What the rules see over time', ar: 'ما تراه القواعد مع مرور الوقت' })}</h2>
-            <Link to="/me/results" className="text-sm font-semibold text-brand-700 hover:underline">
-              {t({ en: 'All results', ar: 'كل النتائج' })}
-            </Link>
           </div>
-          <div className="surface divide-y divide-line overflow-hidden">
-            {newer.slice(0, 4).map((f, i) => (
-              <Finding key={f.id} flag={f} defaultOpen={i === 0} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ---------- Do more ---------- */}
-      {!v.emergency && <CompanionAi basis={planPayload(v, lang)} flagIds={v.flags.map((f) => f.id)} sex={v.base.sex} />}
-
-      <section className="grid gap-3 sm:grid-cols-2">
+          <div className="order-7">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
         {(
           [
             ...(female
@@ -269,7 +288,6 @@ export default function Today() {
               : [
                   { to: '/me/results?add=1', icon: ClipboardCheck, title: { en: 'Add a result', ar: 'أضف نتيجة' }, body: { en: 'Blood pressure, weight, HbA1c, testosterone or a semen analysis.', ar: 'ضغط الدم أو الوزن أو السكر التراكمي أو التستوستيرون أو تحليل السائل المنوي.' } },
                   { to: '/report', icon: ScanLine, title: { en: 'Read a lab report photo', ar: 'اقرأ صورة تقرير مختبر' }, body: { en: 'The AI copies the numbers, you check them.', ar: 'ينسخ الذكاء الاصطناعي الأرقام وتتحقق أنت منها.' } },
-                  { to: '/lens', icon: Microscope, title: { en: 'Home motility check (Lens)', ar: 'فحص الحركة في المنزل (العدسة)' }, body: { en: 'A private first look with a phone and a clip-on lens.', ar: 'نظرة أولى خاصة بالهاتف وعدسة مشبكية.' } },
                 ]),
             { to: '/invite', icon: HeartHandshake, title: { en: 'Invite your partner or a friend', ar: 'ادعُ شريكتك أو صديقاً' }, body: { en: 'A private link; nobody sees whether it is used.', ar: 'رابط خاص، ولا يعرف أحد إن استُخدم.' } },
           ] satisfies { to: string; icon: LucideIcon; title: L10n; body: L10n }[]
@@ -285,6 +303,9 @@ export default function Today() {
           </Link>
         ))}
       </section>
+          </div>
+        </aside>
+      </div>
     </CompanionShell>
   )
 }

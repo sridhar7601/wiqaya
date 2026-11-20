@@ -6,7 +6,7 @@ import { NavLink } from 'react-router'
 import { useI18n } from '../../lib/i18n'
 import type { L10n } from '../../lib/types'
 
-const TABS: { to: string; icon: LucideIcon; label: L10n; end?: boolean }[] = [
+export const TABS: { to: string; icon: LucideIcon; label: L10n; end?: boolean }[] = [
   { to: '/me', icon: House, label: { en: 'Today', ar: 'اليوم' }, end: true },
   { to: '/me/journey', icon: CalendarCheck2, label: { en: 'Journey', ar: 'الرحلة' } },
   { to: '/me/results', icon: FlaskConical, label: { en: 'Results', ar: 'النتائج' } },
@@ -37,71 +37,48 @@ export function QuickExit() {
     <button
       type="button"
       onClick={quickExit}
-      className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-white px-3 text-sm font-medium text-muted shadow-xs hover:text-ink"
+      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold whitespace-nowrap text-muted ring-1 ring-inset ring-line transition-colors hover:bg-canvas hover:text-ink"
       title={t({ en: 'Leave quickly for a neutral page (or press Esc twice)', ar: 'غادر بسرعة إلى صفحة محايدة (أو اضغط Esc مرتين)' })}
     >
       <EyeOff className="h-4 w-4" aria-hidden />
-      {t({ en: 'Quick exit', ar: 'خروج سريع' })}
+      <span className="hidden 2xl:inline">{t({ en: 'Quick exit', ar: 'خروج سريع' })}</span>
+      <span className="sr-only 2xl:hidden">{t({ en: 'Quick exit', ar: 'خروج سريع' })}</span>
     </button>
   )
 }
 
 /** The frame of every companion screen: a title row, the tabs (at the top on wide screens, at the bottom on phones). */
-export function CompanionShell({ title, intro, action, children }: { title: string; intro?: ReactNode; action?: ReactNode; children: ReactNode }) {
+export function CompanionShell({ title, intro, action, wide, children }: { title: string; intro?: ReactNode; action?: ReactNode; wide?: boolean; children: ReactNode }) {
   const { t } = useI18n()
   return (
-    <div className="pb-24 md:pb-12">
-      <nav className="sticky top-16 z-10 hidden border-b border-line bg-white/90 backdrop-blur md:block" aria-label={t({ en: 'Companion', ar: 'الرفيق' })}>
-        <div className="mx-auto flex max-w-4xl items-center gap-1 px-6">
-          {TABS.map((tab) => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end={tab.end}
-              className={({ isActive }) =>
-                `inline-flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors ${isActive ? 'border-brand-700 text-brand-800' : 'border-transparent text-muted hover:text-ink'}`
-              }
-            >
-              <tab.icon className="h-4 w-4" aria-hidden />
-              {t(tab.label)}
-            </NavLink>
-          ))}
-          <span className="ms-auto">
-            <QuickExit />
-          </span>
-        </div>
-      </nav>
-
-      <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+    <div className="pb-28 lg:pb-12">
+      <div className={`mx-auto w-full space-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0 space-y-1">
             <h1 className="title">{title}</h1>
             {intro && <div className="max-w-2xl text-muted">{intro}</div>}
           </div>
-          <div className="flex items-center gap-2">
-            {action}
-            <span className="md:hidden">
-              <QuickExit />
-            </span>
-          </div>
+          {action && <div className="flex items-center gap-2">{action}</div>}
         </div>
         {children}
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden" aria-label={t({ en: 'Companion', ar: 'الرفيق' })}>
-        <div className="grid grid-cols-5">
+      {/* Phones and tablets: a floating tab bar within thumb reach. Wide screens use the switcher in the header. */}
+      <nav
+        className="fixed inset-x-3 bottom-3 z-20 mx-auto max-w-md rounded-2xl border border-line bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-xl backdrop-blur lg:hidden"
+        aria-label={t({ en: 'Companion', ar: 'الرفيق' })}
+      >
+        <div className="grid grid-cols-5 p-1">
           {TABS.map((tab) => (
             <NavLink
               key={tab.to}
               to={tab.to}
               end={tab.end}
-              className={({ isActive }) => `flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${isActive ? 'text-brand-800' : 'text-muted'}`}
+              className={({ isActive }) => `flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[11px] font-semibold transition-colors ${isActive ? 'bg-brand-50 text-brand-800' : 'text-muted'}`}
             >
               {({ isActive }) => (
                 <>
-                  <span className={`inline-flex h-7 w-12 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-brand-50' : ''}`}>
-                    <tab.icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
-                  </span>
+                  <tab.icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? 'scale-110' : ''}`} strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
                   <span className="max-w-full truncate px-1">{t(tab.label)}</span>
                 </>
               )}

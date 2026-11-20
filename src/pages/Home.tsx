@@ -1,14 +1,21 @@
-import { ArrowRight, BadgeCheck, BookOpen, ClipboardCheck, Languages, LockKeyhole, Route, ScanLine, ShieldCheck, Smartphone, Sparkles, Stethoscope, TrendingUp, UserRound } from 'lucide-react'
+import { ArrowRight, BookOpen, Check, HeartHandshake, Languages, LockKeyhole, MessageCircleHeart, Route, ScanLine, ShieldCheck, Smartphone, Sparkles, Stethoscope, TrendingUp } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Link } from 'react-router'
+import { CountUp, Reveal } from '../components/motion'
 import { LayerLabel, LevelIcon, LevelPill } from '../components/ui'
 import { CASES } from '../eval/cases'
-import { assess } from '../lib/engine'
+import { PERSONAS } from '../lib/companion/personas'
+import { assess, RULES } from '../lib/engine'
 import { useI18n } from '../lib/i18n'
 import { LEVEL_LABEL } from '../lib/services'
-import { PERSONAS } from '../lib/companion/personas'
+import { SOURCES } from '../lib/sources'
 import { load } from '../lib/storage'
-import type { Answers } from '../lib/types'
+import type { Answers, L10n, Level } from '../lib/types'
 import { EXAMPLES } from './Example'
+
+const delay = (s: number) => ({ '--d': `${s}s` }) as CSSProperties
 
 export default function Home() {
   const { t } = useI18n()
@@ -17,313 +24,492 @@ export default function Home() {
   return (
     <>
       {/* ---------- Hero ---------- */}
-      <section className="border-b border-line bg-white">
-        <div className="container-app grid items-center gap-12 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:py-20">
-          <div className="space-y-7">
-            <span className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-brand-25 px-3 py-1 text-[13px] font-medium text-brand-800">
-              <ShieldCheck className="h-4 w-4" aria-hidden />
-              {t({ en: 'Reproductive potential, for women and men', ar: 'القدرة الإنجابية، للمرأة والرجل' })}
+      <section className="hero-glow overflow-hidden border-b border-line">
+        <div className="container-app grid items-center gap-12 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:py-24">
+          <div className="stagger space-y-6">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[13px] font-semibold text-brand-800 shadow-sm ring-1 ring-brand-100">
+              <span className="pulse-ring h-2 w-2 rounded-full bg-brand-500" aria-hidden />
+              {t({ en: 'For women and men · Abu Dhabi', ar: 'للمرأة والرجل · أبوظبي' })}
             </span>
-            <div className="space-y-4">
-              <h1 className="display">
-                {t({ en: 'See how your fertility is changing, early enough to choose.', ar: 'اعرف كيف تتغير خصوبتك، في وقت يسمح لك بالاختيار.' })}
-              </h1>
-              <p className="lead max-w-xl">
-                {t({
-                  en: 'Not a fertility score. A private check in five minutes, then a companion that follows your cycle, results and habits over time. It shows what you can change and what you cannot, how sure it is, and the options worth discussing now: tests, counselling, preservation or a specialist.',
-                  ar: 'ليست درجة للخصوبة. فحص خاص في خمس دقائق، ثم رفيق يتابع دورتك ونتائجك وعاداتك مع الوقت. يُظهر ما يمكنك تغييره وما لا يمكنك، ومدى يقينه، والخيارات التي تستحق النقاش الآن: تحاليل أو استشارة أو حفظ الخصوبة أو أخصائي.',
-                })}
-              </p>
-            </div>
+            <h1 className="display">
+              {t({ en: 'See how your fertility is changing.', ar: 'اعرف كيف تتغير خصوبتك.' })}{' '}
+              <span className="text-brand-600">{t({ en: 'Early enough to choose.', ar: 'في وقت يسمح لك بالاختيار.' })}</span>
+            </h1>
+            <p className="lead max-w-lg">
+              {t({ en: 'A private 5-minute check, then a simple plan that follows you over time. No score. No judgement.', ar: 'فحص خاص في خمس دقائق، ثم خطة بسيطة ترافقك مع الوقت. بلا درجات وبلا أحكام.' })}
+            </p>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link to="/check" className="btn btn-primary btn-lg">
                 {t({ en: 'Start the check', ar: 'ابدأ الفحص' })}
                 <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
               </Link>
-              {hasAnswers ? (
-                <Link to="/result" className="btn btn-secondary btn-lg">
-                  {t({ en: 'See my last result', ar: 'عرض نتيجتي الأخيرة' })}
-                </Link>
-              ) : (
-                <Link to={`/example/${EXAMPLES[0].id}`} className="btn btn-secondary btn-lg">
-                  {t({ en: 'See an example result', ar: 'عرض نتيجة نموذجية' })}
-                </Link>
-              )}
+              <Link to={hasAnswers ? '/result' : `/example/${EXAMPLES[0].id}`} className="btn btn-secondary btn-lg">
+                {hasAnswers ? t({ en: 'See my last result', ar: 'عرض نتيجتي الأخيرة' }) : t({ en: 'See an example', ar: 'شاهد مثالاً' })}
+              </Link>
             </div>
-            <Link to="/try/mariam" className="inline-flex items-center gap-2 text-[15px] font-semibold text-ai-700 hover:underline">
-              <TrendingUp className="h-4 w-4" aria-hidden />
-              {t({ en: 'See eight months of one woman’s plan (example)', ar: 'شاهد ثمانية أشهر من خطة امرأة (مثال)' })}
-              <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
-            </Link>
-            <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted">
+            <ul className="flex flex-wrap gap-2">
               {[
-                { icon: LockKeyhole, label: { en: 'Answers stay on your phone', ar: 'تبقى الإجابات على هاتفك' } },
-                { icon: Languages, label: { en: 'Arabic and English', ar: 'العربية والإنجليزية' } },
-                { icon: Stethoscope, label: { en: 'Clinicians stay in charge', ar: 'القرار للطبيب' } },
+                { icon: LockKeyhole, label: { en: 'Stays on your phone', ar: 'يبقى على هاتفك' } },
+                { icon: Languages, label: { en: 'عربي + English', ar: 'عربي + English' } },
+                { icon: Stethoscope, label: { en: 'Your doctor decides', ar: 'القرار لطبيبك' } },
               ].map((x) => (
-                <li key={x.label.en} className="inline-flex items-center gap-2">
-                  <x.icon className="h-4 w-4 text-brand-600" aria-hidden />
+                <li key={x.label.en} className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1.5 text-[13px] font-medium text-body ring-1 ring-line">
+                  <x.icon className="h-3.5 w-3.5 text-brand-600" aria-hidden />
                   {t(x.label)}
                 </li>
               ))}
             </ul>
           </div>
-          <ProductPreview />
+          <Preview />
         </div>
       </section>
 
-      {/* ---------- Fits Abu Dhabi ---------- */}
-      <section className="border-b border-line bg-canvas">
-        <div className="container-app flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-muted">{t({ en: 'Designed to fit Abu Dhabi’s care pathways', ar: 'مصمم ليتكامل مع مسارات الرعاية في أبوظبي' })}</p>
-          <ul className="flex flex-wrap gap-2">
-            {[
-              { en: 'Sahatna patient app', ar: 'تطبيق «صحتنا»' },
-              { en: 'Malaffi (HL7 FHIR)', ar: '«ملفي» (HL7 FHIR)' },
-              { en: 'IFHAS periodic screening', ar: 'الفحص الدوري «إفحص»' },
-              { en: 'Family physician programme', ar: 'برنامج طبيب الأسرة' },
-            ].map((x) => (
-              <li key={x.en} className="rounded-md border border-line bg-white px-2.5 py-1 text-xs font-medium text-body">
-                {t(x)}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* ---------- How it works ---------- */}
-      <section className="container-app py-16">
-        <div className="max-w-2xl space-y-2">
+      {/* ---------- How it works: a three-step navigator ---------- */}
+      <section className="container-app py-16 sm:py-24">
+        <Reveal className="max-w-2xl space-y-3">
           <p className="eyebrow">{t({ en: 'How it works', ar: 'كيف يعمل' })}</p>
-          <h2 className="title">{t({ en: 'From a private question to the right care', ar: 'من سؤال خاص إلى الرعاية المناسبة' })}</h2>
-        </div>
-        <ol className="mt-10 grid gap-6 md:grid-cols-3">
-          {[
-            {
-              icon: Smartphone,
-              title: { en: 'Answer privately, then keep going', ar: 'أجب بخصوصية، ثم واصل' },
-              body: { en: 'About 20 short questions for a woman or a man; sensitive ones always have “Prefer not to say”. Then a 20-second weekly check-in builds the picture over time.', ar: 'نحو 20 سؤالاً قصيراً للمرأة أو للرجل، والأسئلة الحساسة تتضمن دائماً «أفضّل عدم الإجابة». ثم يبني تسجيل أسبوعي مدته 20 ثانية الصورة مع الوقت.' },
-            },
-            {
-              icon: BookOpen,
-              title: { en: 'See what matters, and why', ar: 'اعرف ما يهم ولماذا' },
-              body: { en: 'Every signal shows the answer or result behind it, the guideline it rests on, whether you can change it, and what is still unknown. No black box and no score.', ar: 'تعرض كل إشارة الإجابة أو النتيجة التي وراءها، والإرشاد الذي تستند إليه، وما إذا كان بإمكانك تغييرها، وما لا يزال مجهولاً. دون غموض ودون درجات.' },
-            },
-            {
-              icon: Route,
-              title: { en: 'Go to the right place', ar: 'توجّه إلى المكان المناسب' },
-              body: { en: 'Healthy habits, tests, preconception counselling, a fertility-preservation discussion, a specialist, or urgent care. Send a summary to a doctor only if you choose.', ar: 'عادات صحية، أو تحاليل، أو استشارة ما قبل الحمل، أو مناقشة حفظ الخصوبة، أو أخصائي، أو رعاية عاجلة. وأرسل ملخصاً إلى طبيب فقط إن أردت.' },
-            },
-          ].map((s, i) => (
-            <li key={s.title.en} className="surface surface-pad space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                  <s.icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-                </span>
-                <span className="text-sm font-semibold text-faint tabular-nums">0{i + 1}</span>
-              </div>
-              <h3 className="text-base font-semibold text-ink">{t(s.title)}</h3>
-              <p className="text-sm leading-relaxed text-muted">{t(s.body)}</p>
-            </li>
-          ))}
-        </ol>
+          <h2 className="title">{t({ en: 'Three steps. Most of it takes seconds.', ar: 'ثلاث خطوات، ومعظمها يستغرق ثوانيَ.' })}</h2>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <Steps />
+        </Reveal>
       </section>
 
-      {/* ---------- More than a questionnaire ---------- */}
-      <section className="container-app pb-16">
-        <div className="max-w-2xl space-y-2">
-          <p className="eyebrow">{t({ en: 'More than a questionnaire', ar: 'أكثر من مجرد استبيان' })}</p>
-          <h2 className="title">{t({ en: 'It reads your report, and it reaches your doctor', ar: 'يقرأ تقريرك، ويصل إلى طبيبك' })}</h2>
-        </div>
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className="surface surface-pad flex flex-col gap-4">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-ai-50 text-ai-600 ring-1 ring-inset ring-ai-100">
-              <ScanLine className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-            </span>
-            <div className="space-y-1.5">
-              <h3 className="text-base font-semibold text-ink">{t({ en: 'Understand the report you already have', ar: 'افهم التقرير الذي بين يديك' })}</h3>
-              <p className="text-sm leading-relaxed text-muted">
-                {t({
-                  en: 'Photograph a semen analysis, or add hormone and egg-reserve results. You check the numbers, and fixed rules compare them with published reference points over time, never as a one-off verdict.',
-                  ar: 'صوّر تحليل السائل المنوي، أو أضف نتائج الهرمونات ومخزون البويضات. تتحقق أنت من الأرقام، ثم تقارنها قواعد ثابتة بنقاط مرجعية منشورة مع الوقت، وليس كحكم لمرة واحدة.',
-                })}
-              </p>
-            </div>
-            <Link to="/report" className="link mt-auto inline-flex items-center gap-1.5 text-sm">
-              {t({ en: 'Read a report', ar: 'اقرأ تقريراً' })}
-              <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
-            </Link>
-          </div>
-          <div className="surface surface-pad flex flex-col gap-4">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-              <LockKeyhole className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-            </span>
-            <div className="space-y-1.5">
-              <h3 className="text-base font-semibold text-ink">{t({ en: 'Hand it to your doctor, and stay in control', ar: 'سلّمه لطبيبك وابقَ متحكماً' })}</h3>
-              <p className="text-sm leading-relaxed text-muted">
-                {t({
-                  en: 'Create a private link or QR code. The summary is locked on your phone, so even our server cannot read it. See when it is opened, read your doctor’s reply, and withdraw it whenever you like.',
-                  ar: 'أنشئ رابطاً خاصاً أو رمز QR. يُقفل الملخص على هاتفك، فلا يستطيع حتى خادمنا قراءته. اعرف متى فُتح، واقرأ ردّ طبيبك، واسحبه متى شئت.',
-                })}
-              </p>
-            </div>
-            <Link to={`/share?example=${EXAMPLES[0].id}`} className="link mt-auto inline-flex items-center gap-1.5 text-sm">
-              {t({ en: 'Try it with an example', ar: 'جرّبه بمثال' })}
-              <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------- Safety ---------- */}
+      {/* ---------- Why trust it: a grid of tiles ---------- */}
       <section className="border-y border-line bg-white">
-        <div className="container-app grid gap-10 py-16 lg:grid-cols-[1fr_1.4fr]">
-          <div className="space-y-3">
+        <div className="container-app py-16 sm:py-24">
+          <Reveal className="max-w-2xl space-y-3">
             <p className="eyebrow">{t({ en: 'Built for safety', ar: 'مبني للسلامة' })}</p>
-            <h2 className="title">{t({ en: 'Rules decide. AI reads and explains. Clinicians confirm.', ar: 'القواعد تقرر، والذكاء الاصطناعي يقرأ ويشرح، والطبيب يؤكد.' })}</h2>
-            <p className="text-muted">
-              {t({
-                en: 'Each part has one clear job, and each is tested on its own. You can always see which part said what.',
-                ar: 'لكل جزء مهمة واحدة واضحة، ويُختبر كل منها بمفرده. ويمكنك دائماً معرفة أي جزء قال ماذا.',
-              })}
-            </p>
-            <Link to="/evaluation" className="link inline-flex items-center gap-1.5 text-sm">
-              {t({ en: 'See the test results', ar: 'اطّلع على نتائج الاختبارات' })}
-              <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              { icon: BookOpen, title: { en: 'Fixed clinical rules', ar: 'قواعد سريرية ثابتة' }, body: { en: 'The next step comes from published guidelines. Same answers, same result, every time.', ar: 'تأتي الخطوة التالية من إرشادات منشورة: الإجابات نفسها تعطي النتيجة نفسها دائماً.' } },
-              { icon: Sparkles, title: { en: 'AI reads and explains, never decides', ar: 'الذكاء الاصطناعي يقرأ ويشرح ولا يقرر' }, body: { en: 'Optional. It reads the numbers on a report and puts the result in plain words. It never sees your answers or who you are, and cannot change the step.', ar: 'اختياري. يقرأ أرقام التقرير ويشرح النتيجة بكلمات بسيطة. لا يرى إجاباتك أو هويتك أبداً، ولا يستطيع تغيير الخطوة.' } },
-              { icon: ClipboardCheck, title: { en: 'A clinician confirms', ar: 'الطبيب يؤكد' }, body: { en: 'A shared summary reaches a doctor, who confirms or changes the suggestion with a reason. The reply comes back to your phone.', ar: 'يصل الملخص المشترك إلى طبيب يؤكد الاقتراح أو يغيّره مع ذكر السبب، ويعود ردّه إلى هاتفك.' } },
-              { icon: BadgeCheck, title: { en: 'Tested before you see it', ar: 'مُختبر قبل أن تراه' }, body: { en: 'Every build runs the safety tests: every red flag must be caught, no case under-triaged.', ar: 'تُشغَّل اختبارات السلامة مع كل إصدار: يجب اكتشاف كل مؤشر خطر، ودون أي فرز ناقص.' } },
-            ].map((x) => (
-              <div key={x.title.en} className="rounded-xl border border-line p-5">
-                <x.icon className="h-5 w-5 text-brand-600" strokeWidth={1.75} aria-hidden />
-                <h3 className="mt-3 text-[15px] font-semibold text-ink">{t(x.title)}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{t(x.body)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ---------- Example people over time ---------- */}
-      <section className="container-app pt-16">
-        <div className="max-w-2xl space-y-2">
-          <p className="eyebrow">{t({ en: 'Change over time', ar: 'التغيّر مع الوقت' })}</p>
-          <h2 className="title">{t({ en: 'Open an example person’s plan', ar: 'افتح خطة شخص نموذجي' })}</h2>
-          <p className="text-muted">{t({ en: 'Invented people with months of check-ins, results and doctor replies. Opening one never touches your own data.', ar: 'أشخاص مختلقون لديهم أشهر من التسجيلات والنتائج وردود الأطباء. فتح أحدهم لا يمس بياناتك أبداً.' })}</p>
-        </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PERSONAS.map((p) => (
-            <Link key={p.id} to={`/try/${p.id}`} className="surface group flex flex-col gap-2 p-5 transition-shadow hover:shadow-lg">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[15px] font-semibold text-ink">{t(p.name)}</h3>
-                <ArrowRight className="icon-dir h-4 w-4 text-faint transition-transform group-hover:translate-x-0.5" aria-hidden />
-              </div>
-              <p className="text-sm leading-relaxed text-muted">{t(p.summary)}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ---------- Examples ---------- */}
-      <section className="container-app py-16">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="max-w-2xl space-y-2">
-            <p className="eyebrow">{t({ en: 'Try it without answering', ar: 'جرّبه دون إجابة' })}</p>
-            <h2 className="title">{t({ en: 'Example results', ar: 'نتائج نموذجية' })}</h2>
-            <p className="text-muted">{t({ en: 'Synthetic people, for demonstration. Each opens a full result.', ar: 'أشخاص اصطناعيون للعرض، وتفتح كل حالة نتيجة كاملة.' })}</p>
-          </div>
-        </div>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {EXAMPLES.map((e) => {
-            const as = assess(CASES.find((c) => c.id === e.id)!.answers)
-            return (
-              <Link key={e.id} to={`/example/${e.id}`} className="surface group flex flex-col gap-4 p-5 transition-shadow hover:shadow-lg">
-                <div className="flex items-center justify-between">
-                  <LevelIcon level={as.level} />
-                  <ArrowRight className="icon-dir h-4 w-4 text-faint transition-transform group-hover:translate-x-0.5" aria-hidden />
+            <h2 className="title">{t({ en: 'Rules decide. AI explains. Your doctor confirms.', ar: 'القواعد تقرر، والذكاء الاصطناعي يشرح، وطبيبك يؤكد.' })}</h2>
+          </Reveal>
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-6">
+            <Reveal className="col-span-2 md:col-span-4 md:row-span-2">
+              <Link to="/evaluation" className="group relative flex h-full flex-col justify-between gap-10 overflow-hidden rounded-3xl bg-brand-900 p-7 text-white transition-transform duration-300 hover:-translate-y-1 sm:p-9">
+                <div className="pointer-events-none absolute -end-16 -top-16 h-64 w-64 rounded-full bg-brand-500/30 blur-3xl" aria-hidden />
+                <div className="relative space-y-3">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
+                    <BookOpen className="h-5 w-5" aria-hidden />
+                  </span>
+                  <h3 className="text-3xl leading-tight font-bold tracking-tight sm:text-4xl">{t({ en: 'Fixed clinical rules choose your next step.', ar: 'قواعد سريرية ثابتة تختار خطوتك التالية.' })}</h3>
+                  <p className="max-w-md text-brand-100">{t({ en: 'Same answers, same result, every time. Each one shows its source.', ar: 'الإجابات نفسها تعطي النتيجة نفسها دائماً، ولكل قاعدة مصدرها.' })}</p>
                 </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-[15px] font-semibold text-ink">{t(e.label)}</h3>
-                  <LevelPill level={as.level} label={t(as.emergency ? { en: 'Emergency', ar: 'طارئ' } : LEVEL_LABEL[as.level])} />
-                </div>
+                <dl className="relative grid grid-cols-3 gap-4">
+                  {[
+                    { n: RULES.length, label: { en: 'rules', ar: 'قاعدة' } },
+                    { n: CASES.length, label: { en: 'test cases', ar: 'حالة اختبار' } },
+                    { n: Object.keys(SOURCES).length, label: { en: 'sources', ar: 'مصدراً' } },
+                  ].map((x) => (
+                    <div key={x.label.en}>
+                      <dd className="text-4xl font-bold tracking-tight sm:text-5xl">
+                        <CountUp to={x.n} />
+                      </dd>
+                      <dt className="mt-1 text-sm text-brand-200">{t(x.label)}</dt>
+                    </div>
+                  ))}
+                </dl>
+                <span className="relative inline-flex items-center gap-1.5 text-sm font-semibold text-white">
+                  {t({ en: 'See the live test results', ar: 'شاهد نتائج الاختبارات الحية' })}
+                  <ArrowRight className="icon-dir h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
+                </span>
               </Link>
+            </Reveal>
+            <Tile className="md:col-span-2" delay={0.05} tone="ai" icon={Sparkles} title={{ en: 'AI only explains', ar: 'الذكاء الاصطناعي يشرح فقط' }} body={{ en: 'Optional. It never sees your answers and cannot change the step.', ar: 'اختياري. لا يرى إجاباتك ولا يستطيع تغيير الخطوة.' }} />
+            <Tile className="md:col-span-2" delay={0.1} tone="gold" icon={Stethoscope} title={{ en: 'Your doctor confirms', ar: 'طبيبك يؤكد' }} body={{ en: 'Their reply comes back to your phone and stands for 90 days.', ar: 'يعود ردّه إلى هاتفك ويبقى سارياً 90 يوماً.' }} />
+            <Tile className="md:col-span-2" delay={0.05} tone="brand" icon={LockKeyhole} title={{ en: 'Locked on your phone', ar: 'مقفل على هاتفك' }} body={{ en: 'A shared summary is encrypted. Even our server cannot read it.', ar: 'الملخص المشترك مشفّر، ولا يستطيع حتى خادمنا قراءته.' }} to={`/share?example=${EXAMPLES[0].id}`} />
+            <Tile className="md:col-span-2" delay={0.1} tone="ai" icon={ScanLine} title={{ en: 'Reads a lab report photo', ar: 'يقرأ صورة تقرير المختبر' }} body={{ en: 'It copies the numbers. You check every one.', ar: 'ينسخ الأرقام، وأنت تتحقق من كل رقم.' }} to="/report" />
+            <Reveal className="col-span-2 md:col-span-2" delay={0.15}>
+              <div className="flex h-full flex-col gap-3 rounded-3xl bg-canvas p-6 ring-1 ring-line">
+                <h3 className="text-lg font-bold text-ink">{t({ en: 'Fits Abu Dhabi care', ar: 'يتكامل مع الرعاية في أبوظبي' })}</h3>
+                <ul className="flex flex-wrap gap-2">
+                  {[
+                    { en: 'Sahatna', ar: '«صحتنا»' },
+                    { en: 'Malaffi · FHIR', ar: '«ملفي» · FHIR' },
+                    { en: 'IFHAS', ar: '«إفحص»' },
+                    { en: 'Family physician', ar: 'طبيب الأسرة' },
+                  ].map((x) => (
+                    <li key={x.en} className="rounded-full bg-white px-3 py-1 text-[13px] font-semibold text-body ring-1 ring-line">
+                      {t(x)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Example people: a shelf ---------- */}
+      <section className="container-app pt-16 sm:pt-24">
+        <Reveal className="max-w-2xl space-y-3">
+          <p className="eyebrow">{t({ en: 'Change over time', ar: 'التغيّر مع الوقت' })}</p>
+          <h2 className="title">{t({ en: 'Open someone’s plan.', ar: 'افتح خطة أحدهم.' })}</h2>
+          <p className="text-muted">{t({ en: 'Four invented people with months of history. Your own data is never touched.', ar: 'أربعة أشخاص مختلقين لديهم أشهر من السجل، ولا تُمسّ بياناتك أبداً.' })}</p>
+        </Reveal>
+        <Shelf className="lg:grid-cols-4">
+          {PERSONAS.map((p, i) => {
+            const look = PEOPLE[p.id] ?? PEOPLE.omar
+            return (
+              <Reveal key={p.id} delay={i * 0.06} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-auto">
+                <Link to={`/try/${p.id}`} className="surface surface-link group flex h-full flex-col gap-5 p-5">
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold ${look.tint}`} aria-hidden>
+                      {t(p.name).trim().charAt(0)}
+                    </span>
+                    <h3 className="text-lg font-bold text-ink">{t(p.name)}</h3>
+                  </div>
+                  <ul className="flex flex-wrap gap-1.5">
+                    {look.tags.map((tag) => (
+                      <li key={tag.en} className="rounded-full bg-canvas px-2.5 py-1 text-xs font-semibold text-body ring-1 ring-line">
+                        {t(tag)}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700">
+                    {t({ en: 'Open plan', ar: 'افتح الخطة' })}
+                    <ArrowRight className="icon-dir h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
+                  </span>
+                </Link>
+              </Reveal>
             )
           })}
-        </div>
+        </Shelf>
+      </section>
+
+      {/* ---------- Example results: a shelf ---------- */}
+      <section className="container-app py-16 sm:py-24">
+        <Reveal className="max-w-2xl space-y-3">
+          <p className="eyebrow">{t({ en: 'No answers needed', ar: 'دون إجابات' })}</p>
+          <h2 className="title">{t({ en: 'Or jump straight to a result.', ar: 'أو انتقل مباشرة إلى نتيجة.' })}</h2>
+        </Reveal>
+        <Shelf className="lg:grid-cols-3">
+          {EXAMPLES.map((e, i) => {
+            const as = assess(CASES.find((c) => c.id === e.id)!.answers)
+            return (
+              <Reveal key={e.id} delay={i * 0.05} className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-auto">
+                <Link to={`/example/${e.id}`} className="surface surface-link group flex h-full items-center gap-4 p-5">
+                  <LevelIcon level={as.level} size="lg" />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <h3 className="text-[15px] leading-snug font-bold text-ink">{t(e.label)}</h3>
+                    <LevelPill level={as.level} label={t(as.emergency ? { en: 'Emergency', ar: 'طارئ' } : LEVEL_LABEL[as.level])} />
+                  </div>
+                  <ArrowRight className="icon-dir h-4 w-4 shrink-0 text-faint transition-transform group-hover:translate-x-1" aria-hidden />
+                </Link>
+              </Reveal>
+            )
+          })}
+        </Shelf>
       </section>
 
       {/* ---------- Closing ---------- */}
-      <section className="container-app pb-16">
-        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-brand-900 px-6 py-10 text-white sm:px-10 md:flex-row md:items-center">
-          <div className="max-w-xl space-y-2">
-            <h2 className="text-2xl font-semibold tracking-tight">{t({ en: 'Five minutes now can save months later.', ar: 'خمس دقائق الآن قد توفّر أشهراً لاحقاً.' })}</h2>
-            <p className="text-brand-100">
-              {t({
-                en: 'Most people learn about their fertility only when they are already trying. Many causes, like irregular cycles, weight, infections, steroids or a varicocele, are easier to act on when found early, and timing is a choice only while there is time.',
-                ar: 'يعرف معظم الناس عن خصوبتهم فقط عندما يبدؤون المحاولة. كثير من الأسباب، مثل عدم انتظام الدورة والوزن والالتهابات والستيرويدات ودوالي الخصية، أسهل في التعامل معها عند اكتشافها مبكراً، والتوقيت خيار ما دام هناك وقت.',
-              })}
-            </p>
+      <section className="container-app pb-16 sm:pb-24">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-[2rem] bg-brand-900 px-6 py-12 text-center text-white sm:px-10 sm:py-16">
+            <div className="pointer-events-none absolute -start-20 -bottom-24 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -end-16 -top-20 h-64 w-64 rounded-full bg-ai-600/25 blur-3xl" aria-hidden />
+            <div className="relative mx-auto max-w-xl space-y-5">
+              <h2 className="text-3xl leading-tight font-bold tracking-tight sm:text-5xl">{t({ en: 'Five minutes now can save months later.', ar: 'خمس دقائق الآن قد توفّر أشهراً لاحقاً.' })}</h2>
+              <p className="text-lg text-brand-100">{t({ en: 'Timing is a choice only while there is time.', ar: 'التوقيت خيار ما دام هناك وقت.' })}</p>
+              <Link to="/check" className="btn btn-lg bg-white text-brand-900 shadow-lg hover:-translate-y-px hover:bg-brand-50">
+                {t({ en: 'Start the check', ar: 'ابدأ الفحص' })}
+                <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
+              </Link>
+            </div>
           </div>
-          <Link to="/check" className="btn btn-lg bg-white text-brand-900 hover:bg-brand-50">
-            {t({ en: 'Start the check', ar: 'ابدأ الفحص' })}
-            <ArrowRight className="icon-dir h-4 w-4" aria-hidden />
-          </Link>
-        </div>
+        </Reveal>
       </section>
     </>
   )
 }
 
-/** A faithful, static preview of the real result screen. */
-function ProductPreview() {
+/** A row that swipes sideways on a phone and becomes a grid on a wide screen. */
+function Shelf({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden ${className}`}>{children}</div>
+}
+
+const TONES = {
+  brand: 'bg-brand-50 text-brand-700 ring-brand-100',
+  ai: 'bg-ai-50 text-ai-600 ring-ai-100',
+  gold: 'bg-gold-50 text-gold-700 ring-gold-100',
+}
+
+function Tile({ icon: Icon, title, body, tone, to, className = '', delay: d = 0 }: { icon: LucideIcon; title: L10n; body: L10n; tone: keyof typeof TONES; to?: string; className?: string; delay?: number }) {
   const { t } = useI18n()
+  const inner = (
+    <>
+      <span className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ring-inset ${TONES[tone]}`}>
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <div className="space-y-1">
+        <h3 className="text-base leading-snug font-bold text-ink sm:text-lg">{t(title)}</h3>
+        <p className="hidden text-sm leading-relaxed text-muted sm:block">{t(body)}</p>
+      </div>
+      {to && <ArrowRight className="icon-dir absolute end-5 top-6 h-4 w-4 text-faint transition-transform group-hover:translate-x-1" aria-hidden />}
+    </>
+  )
+  const box = 'group relative flex h-full flex-col gap-3 rounded-3xl bg-white p-4 ring-1 ring-line sm:gap-4 sm:p-6'
   return (
-    <div className="relative mx-auto w-full max-w-md lg:max-w-none" aria-hidden>
-      <div className="absolute -inset-4 rounded-[28px] bg-brand-50 sm:-inset-6" />
-      <div className="relative space-y-3 rounded-2xl border border-line bg-white p-5 shadow-xl sm:p-6">
-        <div className="flex items-start gap-3">
-          <LevelIcon level="primary" size="lg" />
-          <div className="min-w-0 space-y-1">
-            <p className="text-xs font-medium text-muted">{t({ en: 'Your next step', ar: 'خطوتك التالية' })}</p>
-            <p className="text-lg leading-snug font-semibold text-ink">{t({ en: 'See your family doctor or a women’s health clinic', ar: 'راجعي طبيب الأسرة أو عيادة صحة المرأة' })}</p>
-          </div>
-        </div>
-        <div className="divide-y divide-line rounded-xl border border-line">
-          {[
-            { title: { en: 'Your cycles have been irregular lately', ar: 'كانت دوراتك غير منتظمة مؤخراً' }, level: 'primary' as const, why: { en: 'Your last 4 cycles: 51, 36, 41, 34 days', ar: 'آخر 4 دورات: 51، 36، 41، 34 يوماً' } },
-            { title: { en: 'Thinking ahead about age and timing', ar: 'التفكير مبكراً في العمر والتوقيت' }, level: 'selfcare' as const, label: { en: 'Option offered', ar: 'خيار متاح' }, why: { en: 'You are 31 · early menopause in your family · children in 3–5 years', ar: 'عمرك 31 · انقطاع طمث مبكر في العائلة · الإنجاب خلال 3-5 سنوات' } },
-          ].map((f) => (
-            <div key={f.title.en} className="space-y-1 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-ink">{t(f.title)}</span>
-                <LevelPill level={f.level} label={'label' in f && f.label ? t(f.label) : undefined} />
-              </div>
-              <p className="text-xs text-muted">{t(f.why)}</p>
-            </div>
+    <Reveal className={className} delay={d}>
+      {to ? (
+        <Link to={to} className={`${box} surface-link`}>
+          {inner}
+        </Link>
+      ) : (
+        <div className={box}>{inner}</div>
+      )}
+    </Reveal>
+  )
+}
+
+const PEOPLE: Record<string, { tint: string; tags: L10n[] }> = {
+  omar: { tint: 'bg-brand-50 text-brand-800', tags: [{ en: 'Trying 1+ year', ar: 'يحاول منذ أكثر من عام' }, { en: 'Works outdoors', ar: 'يعمل في الخارج' }, { en: '5 months tracked', ar: '5 أشهر من المتابعة' }] },
+  yousef: { tint: 'bg-gold-50 text-gold-700', tags: [{ en: 'Not planning yet', ar: 'لا يخطط بعد' }, { en: 'Blood pressure', ar: 'ضغط الدم' }, { en: 'Family doctor', ar: 'طبيب الأسرة' }] },
+  mariam: { tint: 'bg-ai-50 text-ai-700', tags: [{ en: 'Irregular cycles', ar: 'دورة غير منتظمة' }, { en: 'Children in 3–5 years', ar: 'الإنجاب خلال 3-5 سنوات' }, { en: '8 months tracked', ar: '8 أشهر من المتابعة' }] },
+  fatima: { tint: 'bg-rose-50 text-rose-700', tags: [{ en: 'Trying 7 months', ar: 'تحاول منذ 7 أشهر' }, { en: 'Assessment booked', ar: 'تقييم محجوز' }, { en: 'Husband invited', ar: 'دعوة للزوج' }] },
+}
+
+/* ---------- Hero preview: switch between a woman's and a man's result ---------- */
+const PREVIEW = {
+  female: {
+    level: 'primary' as Level,
+    step: { en: 'See your family doctor or a women’s health clinic', ar: 'راجعي طبيب الأسرة أو عيادة صحة المرأة' },
+    finding: { en: 'Your cycles have been irregular', ar: 'دورتك غير منتظمة مؤخراً' },
+    unit: { en: 'days', ar: 'يوماً' },
+    values: [51, 36, 41, 34],
+    band: [21, 35] as [number, number],
+    bandLabel: { en: 'Typical: 21–35 days', ar: 'المعتاد: 21-35 يوماً' },
+    options: [{ en: 'Simple tests', ar: 'تحاليل بسيطة' }, { en: 'Counselling', ar: 'استشارة' }, { en: 'Preservation talk', ar: 'نقاش حفظ الخصوبة' }],
+    ai: { en: 'Irregular cycles are common and often have a simple cause. Talking about timing is a choice, not a warning.', ar: 'عدم انتظام الدورة شائع وغالباً سببه بسيط. الحديث عن التوقيت خيار وليس تحذيراً.' },
+  },
+  male: {
+    level: 'specialist' as Level,
+    step: { en: 'See a men’s health specialist', ar: 'راجع أخصائي صحة الرجل' },
+    finding: { en: 'Two semen results below the range', ar: 'نتيجتان للسائل المنوي دون المعدل' },
+    unit: { en: 'million/mL', ar: 'مليون/مل' },
+    values: [9, 12, 14],
+    band: [16, 40] as [number, number],
+    bandLabel: { en: 'Reference: 16 or more', ar: 'المرجع: 16 أو أكثر' },
+    options: [{ en: 'Repeat the test', ar: 'إعادة التحليل' }, { en: 'Cooler work habits', ar: 'عادات عمل أبرد' }, { en: 'Specialist visit', ar: 'زيارة الأخصائي' }],
+    ai: { en: 'One low result does not decide anything, and yours are moving the right way. A specialist can look for a cause.', ar: 'نتيجة منخفضة واحدة لا تحسم شيئاً، ونتائجك تتحسن. يستطيع الأخصائي البحث عن السبب.' },
+  },
+}
+
+function Preview() {
+  const { t } = useI18n()
+  const [who, setWho] = useState<'female' | 'male'>('female')
+  const p = PREVIEW[who]
+  const max = Math.max(...p.values, p.band[1]) * 1.08
+  return (
+    <div className="anim-pop relative mx-auto w-full max-w-md lg:max-w-none" style={delay(0.2)}>
+      <div className="mb-4 flex justify-center">
+        <div className="inline-flex rounded-full bg-white p-1 shadow-sm ring-1 ring-line" role="group" aria-label={t({ en: 'Example to preview', ar: 'المثال المعروض' })}>
+          {(['female', 'male'] as const).map((w) => (
+            <button key={w} type="button" onClick={() => setWho(w)} aria-pressed={who === w} className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${who === w ? 'bg-brand-800 text-white shadow-sm' : 'text-muted hover:text-ink'}`}>
+              {w === 'female' ? t({ en: 'A woman’s result', ar: 'نتيجة امرأة' }) : t({ en: 'A man’s result', ar: 'نتيجة رجل' })}
+            </button>
           ))}
         </div>
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <LayerLabel layer="rules" />
-          <span className="text-xs text-faint">rules-0.2.0</span>
+      </div>
+      <div className="anim-float" aria-hidden>
+        <div key={who} className="stagger space-y-3 rounded-3xl border border-line bg-white p-5 shadow-xl sm:p-6">
+          <div className="flex items-start gap-3">
+            <LevelIcon level={p.level} size="lg" />
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-xs font-semibold text-muted">{t({ en: 'Your next step', ar: 'خطوتك التالية' })}</p>
+              <p className="text-lg leading-snug font-bold text-ink">{t(p.step)}</p>
+            </div>
+          </div>
+          <div className="rounded-2xl bg-canvas p-4 ring-1 ring-line">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm font-bold text-ink">{t(p.finding)}</p>
+              <p className="shrink-0 text-xs text-muted">{t(p.unit)}</p>
+            </div>
+            <div className="relative mt-3 flex h-24 items-end gap-3">
+              <div className="absolute inset-x-0 rounded-md bg-brand-100/70" style={{ bottom: `${(p.band[0] / max) * 100}%`, height: `${((Math.min(p.band[1], max) - p.band[0]) / max) * 100}%` }} />
+              {p.values.map((v, i) => {
+                const out = v < p.band[0] || v > p.band[1]
+                return (
+                  <div key={i} className="relative flex flex-1 flex-col items-center justify-end gap-1" style={{ height: '100%' }}>
+                    <span className="text-xs font-bold text-ink tabular-nums">{v}</span>
+                    <span className={`w-full origin-bottom rounded-t-md ${out ? 'bg-amber-400' : 'bg-brand-600'}`} style={{ height: `${(v / max) * 78}%`, animation: `grow-y 0.7s cubic-bezier(0.22,1,0.36,1) ${0.25 + i * 0.08}s both` }} />
+                  </div>
+                )
+              })}
+            </div>
+            <p className="mt-2 text-xs text-muted">{t(p.bandLabel)}</p>
+          </div>
+          <ul className="flex flex-wrap gap-1.5">
+            {p.options.map((o) => (
+              <li key={o.en} className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-800 ring-1 ring-brand-100">
+                <Check className="h-3 w-3" aria-hidden />
+                {t(o)}
+              </li>
+            ))}
+          </ul>
+          <div className="rounded-2xl bg-ai-50 p-3.5 ring-1 ring-inset ring-ai-100">
+            <LayerLabel layer="ai" />
+            <p className="mt-1 text-sm leading-relaxed text-body">{t(p.ai)}</p>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <LayerLabel layer="rules" />
+            <span className="text-xs text-faint">{t({ en: 'No score', ar: 'بلا درجات' })}</span>
+          </div>
         </div>
-        <div className="rounded-xl bg-ai-50 p-3.5 ring-1 ring-inset ring-ai-100">
-          <LayerLabel layer="ai" />
-          <p className="mt-1.5 text-sm leading-relaxed text-body">
-            {t({
-              en: 'Irregular cycles are common and often have a simple cause such as PCOS. Talking about timing now is a choice you can make, not a warning.',
-              ar: 'عدم انتظام الدورة شائع، وغالباً سببه بسيط مثل تكيّس المبايض. الحديث عن التوقيت الآن خيار يمكنك اتخاذه، وليس تحذيراً.',
-            })}
-          </p>
+      </div>
+    </div>
+  )
+}
+
+/* ---------- How it works: pick a step, see it ---------- */
+const STEPS: { icon: LucideIcon; time: L10n; title: L10n; body: L10n }[] = [
+  { icon: Smartphone, time: { en: '5 minutes', ar: '5 دقائق' }, title: { en: 'Answer privately', ar: 'أجب بخصوصية' }, body: { en: 'About 20 taps. “Prefer not to say” is always there.', ar: 'نحو 20 نقرة، و«أفضّل عدم الإجابة» متاحة دائماً.' } },
+  { icon: TrendingUp, time: { en: '20 seconds a week', ar: '20 ثانية أسبوعياً' }, title: { en: 'Watch the direction', ar: 'راقب الاتجاه' }, body: { en: 'Cycles, results and habits, charted over months.', ar: 'الدورة والنتائج والعادات في رسوم على مدى أشهر.' } },
+  { icon: Route, time: { en: 'When you are ready', ar: 'عندما تكون جاهزاً' }, title: { en: 'Take the right door', ar: 'اختر الباب المناسب' }, body: { en: 'From habits to a specialist. Your doctor confirms.', ar: 'من العادات إلى الأخصائي، وطبيبك يؤكد.' } },
+]
+const STEP_MS = 5200
+
+function Steps() {
+  const { t } = useI18n()
+  const [i, setI] = useState(0)
+  const [auto, setAuto] = useState(() => !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+  useEffect(() => {
+    if (!auto) return
+    const id = window.setTimeout(() => setI((n) => (n + 1) % STEPS.length), STEP_MS)
+    return () => window.clearTimeout(id)
+  }, [i, auto])
+  const pick = (n: number) => {
+    setAuto(false)
+    setI(n)
+  }
+  return (
+    <div className="mt-10 grid gap-5 lg:grid-cols-[1fr_1.15fr] lg:gap-8">
+      <ol className="grid grid-cols-3 gap-2 lg:grid-cols-1 lg:gap-3">
+        {STEPS.map((s, n) => {
+          const on = n === i
+          return (
+            <li key={s.title.en}>
+              <button
+                type="button"
+                onClick={() => pick(n)}
+                aria-pressed={on}
+                className={`relative h-full w-full overflow-hidden rounded-2xl p-3 text-start transition-all duration-300 lg:p-5 ${on ? 'bg-white shadow-lg ring-1 ring-brand-200' : 'bg-transparent ring-1 ring-line hover:bg-white'}`}
+              >
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
+                  <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors duration-300 lg:h-12 lg:w-12 ${on ? 'bg-brand-800 text-white' : 'bg-brand-50 text-brand-700'}`}>
+                    <s.icon className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold tracking-wider text-brand-600 uppercase">{t(s.time)}</p>
+                    <p className="text-sm leading-snug font-bold text-ink lg:text-xl">{t(s.title)}</p>
+                    <p className="mt-1 hidden text-sm text-muted lg:block">{t(s.body)}</p>
+                  </div>
+                </div>
+                {on && auto && <span key={i} className="absolute inset-x-0 bottom-0 h-1 origin-left bg-brand-500 rtl:origin-right" style={{ animation: `grow-x ${STEP_MS}ms linear both` }} aria-hidden />}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+      <div className="relative min-h-[21rem] overflow-hidden rounded-3xl bg-brand-900 p-5 sm:p-8">
+        <div className="pointer-events-none absolute -end-20 -top-20 h-64 w-64 rounded-full bg-brand-500/30 blur-3xl" aria-hidden />
+        <p className="relative mb-4 text-sm font-medium text-brand-100 lg:hidden">{t(STEPS[i].body)}</p>
+        <div key={i} className="anim-next relative" aria-hidden>
+          {i === 0 && <StepAnswer />}
+          {i === 1 && <StepTrack />}
+          {i === 2 && <StepAct />}
         </div>
-        <div className="flex items-center gap-2 rounded-lg bg-canvas px-3 py-2 text-xs text-muted">
-          <UserRound className="h-3.5 w-3.5" aria-hidden />
-          {t({ en: 'Summary ready to share with your doctor, only if you choose', ar: 'ملخص جاهز لمشاركته مع طبيبك، فقط إن أردت' })}
+      </div>
+    </div>
+  )
+}
+
+function StepAnswer() {
+  const { t } = useI18n()
+  return (
+    <div className="mx-auto max-w-sm space-y-4 rounded-2xl bg-white p-5 shadow-xl">
+      <div className="h-1.5 overflow-hidden rounded-full bg-brand-50">
+        <div className="anim-grow-x h-full w-2/5 rounded-full bg-brand-600" />
+      </div>
+      <p className="text-lg font-bold text-ink">{t({ en: 'Would you like children?', ar: 'هل ترغبين في الإنجاب؟' })}</p>
+      <div className="stagger space-y-2">
+        {[
+          { label: { en: 'Trying now', ar: 'أحاول الآن' } },
+          { label: { en: 'In a few years', ar: 'خلال بضع سنوات' }, on: true },
+          { label: { en: 'Prefer not to say', ar: 'أفضّل عدم الإجابة' } },
+        ].map((o) => (
+          <div key={o.label.en} className={`flex items-center justify-between rounded-xl px-4 py-3 text-[15px] font-semibold ring-1 ${o.on ? 'bg-brand-25 text-brand-900 ring-2 ring-brand-600' : 'text-ink ring-line'}`}>
+            {t(o.label)}
+            {o.on && (
+              <span className="anim-pop inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-white" style={delay(0.5)}>
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function StepTrack() {
+  const { t } = useI18n()
+  // Eight months of cycle length, drifting back toward the typical band.
+  const pts = [52, 47, 49, 43, 44, 39, 37, 35]
+  const x = (n: number) => 16 + (n * 288) / (pts.length - 1)
+  const y = (v: number) => 132 - ((v - 18) / 40) * 116
+  const d = pts.map((v, n) => `${n ? 'L' : 'M'}${x(n).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')
+  return (
+    <div className="mx-auto max-w-sm space-y-3 rounded-2xl bg-white p-5 shadow-xl">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-ink">{t({ en: 'Cycle length', ar: 'طول الدورة' })}</p>
+        <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-800">
+          <TrendingUp className="h-3 w-3" />
+          {t({ en: 'Settling', ar: 'يستقر' })}
+        </span>
+      </div>
+      <svg viewBox="0 0 320 150" className="w-full" role="img">
+        <rect x="8" y={y(35)} width="304" height={y(21) - y(35)} rx="6" className="fill-brand-50" />
+        <path d={d} fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="anim-draw stroke-brand-600" style={{ '--len': 420 } as CSSProperties} />
+        {pts.map((v, n) => (
+          <circle key={n} cx={x(n)} cy={y(v)} r="4.5" className="anim-pop fill-white stroke-brand-700" strokeWidth="2.5" style={{ ...delay(0.25 + n * 0.12), transformOrigin: `${x(n)}px ${y(v)}px` }} />
+        ))}
+      </svg>
+      <div className="flex items-center justify-between text-xs font-medium text-muted">
+        <span>{t({ en: 'March', ar: 'مارس' })}</span>
+        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-brand-800">{t({ en: 'Typical: 21–35 days', ar: 'المعتاد: 21-35 يوماً' })}</span>
+        <span>{t({ en: 'October', ar: 'أكتوبر' })}</span>
+      </div>
+    </div>
+  )
+}
+
+function StepAct() {
+  const { t } = useI18n()
+  return (
+    <div className="mx-auto max-w-sm space-y-3">
+      <ul className="stagger grid grid-cols-2 gap-2">
+        {[
+          { icon: HeartHandshake, label: { en: 'Healthy habits', ar: 'عادات صحية' } },
+          { icon: ScanLine, label: { en: 'Tests', ar: 'تحاليل' } },
+          { icon: MessageCircleHeart, label: { en: 'Counselling', ar: 'استشارة' } },
+          { icon: ShieldCheck, label: { en: 'Preservation talk', ar: 'نقاش حفظ الخصوبة' } },
+        ].map((o) => (
+          <li key={o.label.en} className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20">
+            <o.icon className="h-4 w-4 shrink-0 text-brand-200" />
+            {t(o.label)}
+          </li>
+        ))}
+      </ul>
+      <div className="anim-rise space-y-2 rounded-2xl bg-white p-4 shadow-xl" style={delay(0.45)}>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gold-50 text-gold-700 ring-1 ring-gold-100">
+            <Stethoscope className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-ink">{t({ en: 'Your doctor replied', ar: 'ردّ طبيبك' })}</p>
+            <p className="text-xs text-muted">{t({ en: 'Encrypted · only you can read it', ar: 'مشفّر · تقرؤه أنت فقط' })}</p>
+          </div>
         </div>
+        <p className="rounded-xl bg-canvas px-3 py-2 text-sm text-body">{t({ en: '“Agreed. Let’s do simple tests first, then talk about timing.”', ar: '«موافق. لنبدأ بتحاليل بسيطة، ثم نتحدث عن التوقيت.»' })}</p>
       </div>
     </div>
   )

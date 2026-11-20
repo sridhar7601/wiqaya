@@ -1,5 +1,5 @@
-import { Eye, EyeOff } from 'lucide-react'
-import { useEffect } from 'react'
+import { ArrowRight, Eye, EyeOff, Menu, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router'
 import { VaultGate } from './components/LockScreen'
 import { LogoMark } from './components/ui'
@@ -10,6 +10,7 @@ import Check from './pages/Check'
 import CheckIn from './pages/companion/CheckIn'
 import Care from './pages/companion/Care'
 import Controls from './pages/companion/Controls'
+import { QuickExit, TABS } from './pages/companion/Shell'
 import Habits from './pages/companion/Habits'
 import Journey from './pages/companion/Journey'
 import Results from './pages/companion/Results'
@@ -46,6 +47,9 @@ const NAV = [
   { to: '/population', label: { en: 'Health system', ar: 'النظام الصحي' } },
 ]
 
+const pill = ({ isActive }: { isActive: boolean }) =>
+  `inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold whitespace-nowrap transition-all duration-200 ${isActive ? 'bg-white text-brand-800 shadow-sm ring-1 ring-line' : 'text-muted hover:text-ink'}`
+
 export default function App() {
   const { lang, setLang, t, discreet, setDiscreet } = useI18n()
   const { pathname } = useLocation()
@@ -53,45 +57,70 @@ export default function App() {
   const inCompanion = pathname === '/me' || pathname.startsWith('/me/')
   const example = activeExample()
   const persona = PERSONAS.find((p) => p.id === example)
+  const [menu, setMenu] = useState(false)
+  // The menu closes whenever the page changes.
+  useEffect(() => setMenu(false), [pathname])
 
   return (
     <div className="flex min-h-dvh flex-col">
       <ScrollToTop />
-      <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
-        <div className="container-app flex h-16 items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2.5 text-brand-800" aria-label={t(APP_NAME)}>
+      <header className="sticky top-0 z-30 border-b border-line/70 bg-white/80 backdrop-blur-xl">
+        <div className="container-app flex h-16 items-center gap-2 sm:gap-3">
+          <Link to="/" className="flex shrink-0 items-center gap-2.5 text-brand-800 transition-opacity hover:opacity-80" aria-label={t(APP_NAME)}>
             <LogoMark />
-            <span className="text-[17px] font-semibold tracking-tight text-ink">{discreet ? t({ en: 'Health check', ar: 'فحص صحي' }) : t(APP_NAME)}</span>
+            <span className={`text-[17px] font-bold tracking-tight text-ink ${persona ? 'hidden sm:inline' : ''}`}>{discreet ? t({ en: 'Health check', ar: 'فحص صحي' }) : t(APP_NAME)}</span>
           </Link>
 
+          {/* One bar, one switcher: the plan's tabs inside the plan, the site's pages everywhere else. */}
           {!inFlow && (
-            <nav className="hidden items-center gap-1 md:flex" aria-label={t({ en: 'Main', ar: 'الرئيسية' })}>
-              {NAV.map((n) => (
-                <NavLink
-                  key={n.to}
-                  to={n.to}
-                  className={({ isActive }) =>
-                    `rounded-md px-2.5 py-2 text-sm font-medium whitespace-nowrap transition-colors lg:px-3 ${isActive ? 'bg-brand-50 text-brand-800' : 'text-muted hover:bg-canvas hover:text-ink'}`
-                  }
-                >
-                  {t(n.label)}
-                </NavLink>
-              ))}
+            <nav className="mx-auto hidden items-center gap-0.5 rounded-full bg-canvas p-1 ring-1 ring-inset ring-line lg:flex" aria-label={t({ en: 'Main', ar: 'الرئيسية' })}>
+              {inCompanion
+                ? TABS.map((tab) => (
+                    <NavLink key={tab.to} to={tab.to} end={tab.end} className={pill}>
+                      <tab.icon className="h-4 w-4" aria-hidden />
+                      {t(tab.label)}
+                    </NavLink>
+                  ))
+                : NAV.map((n) => (
+                    <NavLink key={n.to} to={n.to} className={pill}>
+                      {t(n.label)}
+                    </NavLink>
+                  ))}
             </nav>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className={`ms-auto flex items-center gap-1.5 ${inFlow ? '' : 'lg:ms-0'}`}>
+            {persona && (
+              <button
+                type="button"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-gold-50 ps-3 pe-2 text-[13px] font-semibold text-gold-700 ring-1 ring-inset ring-gold-300 transition-colors hover:bg-gold-100"
+                title={t({ en: 'Example with invented data; your own data is untouched. Click to leave the example.', ar: 'مثال ببيانات مختلقة، ولا تُمسّ بياناتك. اضغط للخروج من المثال.' })}
+                onClick={() => {
+                  closeExample()
+                  window.location.hash = '#/'
+                  window.location.reload()
+                }}
+              >
+                <span className="max-w-[9.5rem] truncate">
+                  <span className="hidden sm:inline">{t({ en: 'Example', ar: 'مثال' })} · </span>
+                  {t(persona.name)}
+                </span>
+                <X className="h-3.5 w-3.5" aria-hidden />
+                <span className="sr-only">{t({ en: 'Leave the example', ar: 'اخرج من المثال' })}</span>
+              </button>
+            )}
+            {inCompanion && <QuickExit />}
             <button
               type="button"
               onClick={() => setDiscreet(!discreet)}
               aria-pressed={discreet}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors ${discreet ? 'bg-brand-50 text-brand-800' : 'text-muted hover:bg-canvas hover:text-ink'}`}
+              className={`hidden h-9 w-9 items-center justify-center rounded-full transition-colors sm:inline-flex ${discreet ? 'bg-brand-50 text-brand-800' : 'text-muted hover:bg-canvas hover:text-ink'}`}
               title={t({ en: 'Discreet mode: a neutral name in the tab and header', ar: 'الوضع المتحفظ: اسم محايد في التبويب والعنوان' })}
+              aria-label={t({ en: 'Discreet mode', ar: 'الوضع المتحفظ' })}
             >
               {discreet ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
-              <span className="hidden sm:inline md:hidden lg:inline">{t({ en: 'Discreet', ar: 'متحفظ' })}</span>
             </button>
-            <div className="inline-flex h-9 items-center rounded-lg border border-line bg-canvas p-0.5" role="group" aria-label={t({ en: 'Language', ar: 'اللغة' })}>
+            <div className="inline-flex h-9 items-center rounded-full bg-canvas p-0.5 ring-1 ring-inset ring-line" role="group" aria-label={t({ en: 'Language', ar: 'اللغة' })}>
               {(['en', 'ar'] as const).map((l) => (
                 <button
                   key={l}
@@ -99,39 +128,60 @@ export default function App() {
                   onClick={() => setLang(l)}
                   aria-pressed={lang === l}
                   lang={l}
-                  className={`h-full rounded-md px-2.5 text-sm font-semibold transition-colors ${lang === l ? 'bg-white text-ink shadow-xs' : 'text-muted hover:text-ink'}`}
+                  className={`h-full rounded-full px-2.5 text-[13px] font-semibold transition-all ${lang === l ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'}`}
                 >
                   {l === 'en' ? 'EN' : 'عربي'}
                 </button>
               ))}
             </div>
+            {!inFlow && (
+              <button
+                type="button"
+                onClick={() => setMenu((m) => !m)}
+                aria-expanded={menu}
+                aria-label={t({ en: 'Menu', ar: 'القائمة' })}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-full text-ink transition-colors hover:bg-canvas ${inCompanion ? '' : 'lg:hidden'}`}
+              >
+                {menu ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+              </button>
+            )}
           </div>
         </div>
-      </header>
 
-      {persona && (
-        <div className="border-b border-gold-300 bg-gold-50">
-          <div className="container-app flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-            <p className="text-gold-700">
-              <span className="font-semibold">{t({ en: 'Example:', ar: 'مثال:' })}</span> {t(persona.name)} · {t({ en: 'invented data, your own data is untouched', ar: 'بيانات مختلقة، ولا تُمسّ بياناتك' })}
-            </p>
-            <button
-              type="button"
-              className="font-semibold text-gold-700 underline-offset-4 hover:underline"
-              onClick={() => {
-                closeExample()
-                window.location.hash = '#/'
-                window.location.reload()
-              }}
-            >
-              {t({ en: 'Leave the example', ar: 'اخرج من المثال' })}
-            </button>
-          </div>
-        </div>
-      )}
+        {menu && (
+          <>
+            <button type="button" className="anim-fade fixed inset-0 top-16 -z-10 bg-ink/20" aria-label={t({ en: 'Close menu', ar: 'إغلاق القائمة' })} onClick={() => setMenu(false)} />
+            <div className="anim-rise absolute inset-x-0 top-full border-b border-line bg-white shadow-xl">
+              <nav className="container-app stagger grid gap-1 py-4 sm:grid-cols-2 lg:grid-cols-3" aria-label={t({ en: 'All pages', ar: 'كل الصفحات' })}>
+                {[{ to: '/', label: { en: 'Home', ar: 'الرئيسية' } }, { to: '/check', label: { en: 'Start the check', ar: 'ابدأ الفحص' } }, ...NAV].map((n) => (
+                  <NavLink
+                    key={n.to}
+                    to={n.to}
+                    end
+                    className={({ isActive }) => `flex items-center justify-between rounded-xl px-4 py-3 text-base font-semibold transition-colors ${isActive ? 'bg-brand-50 text-brand-800' : 'text-ink hover:bg-canvas'}`}
+                  >
+                    {t(n.label)}
+                    <ArrowRight className="icon-dir h-4 w-4 text-faint" aria-hidden />
+                  </NavLink>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setDiscreet(!discreet)}
+                  aria-pressed={discreet}
+                  className="flex items-center justify-between rounded-xl px-4 py-3 text-base font-semibold text-ink hover:bg-canvas sm:hidden"
+                >
+                  {t({ en: 'Discreet mode', ar: 'الوضع المتحفظ' })}
+                  {discreet ? <EyeOff className="h-4 w-4 text-brand-700" aria-hidden /> : <Eye className="h-4 w-4 text-faint" aria-hidden />}
+                </button>
+              </nav>
+            </div>
+          </>
+        )}
+      </header>
 
       <main className="flex-1">
         <VaultGate>
+        <div key={pathname} className="page-enter">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/check" element={<Check />} />
@@ -157,6 +207,7 @@ export default function App() {
           <Route path="/i/:from" element={<InviteLanding />} />
           <Route path="*" element={<Home />} />
         </Routes>
+        </div>
         </VaultGate>
       </main>
 
