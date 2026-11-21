@@ -76,6 +76,7 @@ Assumptions: the person has a smartphone and internet access; a family physician
 | Explainer request | No | Result titles and the suggested step only. Never logged. |
 | Feedback | Counters | Two ratings, time taken, language. Nothing else is accepted. |
 | Network address | Salted hash, up to 2 hours | Only for rate limits. |
+| Page openings | Anonymous count, at PostHog | Page name, language, phone or desktop, time, country. No cookie, no page address, no answers (`src/lib/visits.ts`). Off unless `VITE_POSTHOG_KEY` is set. |
 
 Request bodies are never written to logs.
 
@@ -99,7 +100,7 @@ Use `localhost`, not a LAN address, to try the private link: browsers only allow
 
 1. `npx vercel deploy --prod` from this folder. `vercel.json` sets the build, headers and function limits.
 2. Add the **Upstash for Redis** integration to the project (Storage tab). It sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`, which turn on the private link, the feedback counters and the shared rate limits.
-3. Set `GCP_SERVICE_ACCOUNT_JSON` in the project settings (the contents of a Google Cloud service-account key with the Vertex AI User role) to turn on the AI features. An `OPENAI_API_KEY`, or the Azure OpenAI values in `.env.example`, work instead.
+3. Set `GCP_SERVICE_ACCOUNT_JSON` in the project settings (the contents of a Google Cloud service-account key with the Vertex AI User role) to turn on the AI features. An `OPENAI_API_KEY`, or the Azure OpenAI values in `.env.example`, work instead. Optional: `OPENAI_BACKUP_API_KEY` answers any call the main service refuses; name both services in `VITE_AI_PROVIDER` so the consent text stays true.
 
 Each part degrades on its own: without the store the hand-off stays on the device, and without the AI key the numbers are typed by hand.
 

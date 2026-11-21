@@ -7,6 +7,7 @@ import { LogoMark } from './components/ui'
 import { PERSONAS } from './lib/companion/personas'
 import { APP_NAME, useI18n } from './lib/i18n'
 import { activeExample, closeExample } from './lib/storage'
+import { countVisit, pageName } from './lib/visits'
 import Check from './pages/Check'
 import CheckIn from './pages/companion/CheckIn'
 import Care from './pages/companion/Care'
@@ -62,6 +63,9 @@ export default function App() {
   const hasTour = TOUR_PATHS.has(pathname)
   // The menu closes whenever the page changes.
   useEffect(() => setMenu(false), [pathname])
+  // One anonymous count per page opening: the page's name only, never its address (see lib/visits.ts).
+  const page = pageName(pathname)
+  useEffect(() => countVisit(page, { lang, example: !!example }), [page]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex min-h-dvh flex-col">

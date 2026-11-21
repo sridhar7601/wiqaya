@@ -90,4 +90,43 @@ describe('Google Vertex AI as the AI service (no network)', () => {
     expect(JSON.parse(r.body).guardrail).toBe('pass')
     expect(chats).toBe(3)
   })
+
+  it('hands a call Google keeps refusing to the backup service, after one quick retry', async () => {
+    process.env.OPENAI_BACKUP_API_KEY = 'backup-key'
+    const calls = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url, init) => {
+      calls.push({ url: String(url), init })
+      if (String(url) === TOKEN_URI) return json({ access_token: 'tok-3', expires_in: 3600 })
+      if (String(url).includes('aiplatform.googleapis.com')) return json({ error: { code: 403, status: 'PERMISSION_DENIED' } }, 403)
+      return json({ choices: [{ finish_reason: 'stop', message: { content: 'It is worth seeing your family doctor.' } }] })
+    })
+    const r = await post({ lang: 'en', mode: 'explain', result })
+    expect(r.statusCode).toBe(200)
+    expect(JSON.parse(r.body)).toEqual({ text: 'It is worth seeing your family doctor.', guardrail: 'pass' })
+    const chats = calls.filter((c) => c.url !== TOKEN_URI)
+    expect(chats.map((c) => new URL(c.url).host)).toEqual(['aiplatform.googleapis.com', 'aiplatform.googleapis.com', 'api.openai.com'])
+    const backup = chats[2]
+    expect(backup.init.headers.authorization).toBe('Bearer backup-key')
+    const sent = JSON.parse(backup.init.body)
+    expect(sent.model).toBe('gpt-4.1')
+    // The backup gets its own settings, not Gemini's.
+    expect(sent).not.toHaveProperty('reasoning_effort')
+    expect(sent.max_completion_tokens).toBe(1500)
+    // Google's key and token never go to the backup, and the backup key never goes to Google.
+    expect(JSON.stringify(backup.init)).not.toContain('tok-3')
+    expect(JSON.stringify(chats.slice(0, 2).map((c) => c.init))).not.toContain('backup-key')
+  })
+
+  it('does not touch the backup while Google answers', async () => {
+    process.env.OPENAI_BACKUP_API_KEY = 'backup-key'
+    const hosts = []
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
+      hosts.push(new URL(String(url)).host)
+      if (String(url) === TOKEN_URI) return json({ access_token: 'tok-4', expires_in: 3600 })
+      return json({ choices: [{ finish_reason: 'stop', message: { content: 'It is worth seeing your family doctor.' } }] })
+    })
+    const r = await post({ lang: 'en', mode: 'explain', result })
+    expect(r.statusCode).toBe(200)
+    expect(hosts).not.toContain('api.openai.com')
+  })
 })

@@ -21,7 +21,11 @@ const BLOCKS: { icon: LucideIcon; title: L10n; items: L10n[] }[] = [
     title: { en: 'What we do not collect', ar: 'ما لا نجمعه' },
     items: [
       { en: 'No account and no name (unless you add a first name to a summary). No phone number, Emirates ID, date of birth or location.', ar: 'لا حساب ولا اسم (إلا إذا أضفت اسمك الأول إلى ملخص)، ولا رقم هاتف أو هوية إماراتية أو تاريخ ميلاد أو موقع.' },
-      { en: 'No tracking or analytics scripts, no advertising, no third-party fonts.', ar: 'لا برامج تتبع أو تحليلات، ولا إعلانات، ولا خطوط من جهات خارجية.' },
+      { en: 'No advertising, no cookies, no third-party fonts, and nothing that follows you between visits.', ar: 'لا إعلانات ولا ملفات تعريف ارتباط ولا خطوط من جهات خارجية، ولا شيء يتتبعك بين الزيارات.' },
+      {
+        en: 'To see whether the prototype is used, each page opening is counted anonymously with PostHog: the page’s name, the language, phone or desktop, the time and the country. Never your answers, your result or the page address.',
+        ar: 'لمعرفة مدى استخدام النموذج الأولي، يُحتسب فتح كل صفحة بشكل مجهول عبر PostHog: اسم الصفحة واللغة ونوع الجهاز والوقت والبلد، دون إجاباتك أو نتيجتك أو عنوان الصفحة.',
+      },
     ],
   },
   {

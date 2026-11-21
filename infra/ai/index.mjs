@@ -279,6 +279,12 @@ const provider = () =>
         ? 'azure'
         : null
 
+/**
+ * A second service to fall back on (OPENAI_BACKUP_API_KEY, an OpenAI key; OPENAI_BACKUP_MODEL, default gpt-4.1).
+ * It is used only for a call the main service refused or did not answer, never as the first choice.
+ */
+const backupConfigured = () => !!process.env.OPENAI_BACKUP_API_KEY && provider() !== null && provider() !== 'openai'
+
 /** True when an AI provider is configured. Shared with the report reader (report.mjs). */
 export const aiConfigured = () => provider() !== null
 
@@ -322,8 +328,11 @@ async function vertexAccessToken() {
 }
 
 /** Where a chat-completions request goes, and how it is authenticated. */
-async function target() {
-  if (provider() === 'vertex') {
+async function target(kind = provider()) {
+  if (kind === 'backup') {
+    return { url: 'https://api.openai.com/v1/chat/completions', headers: { authorization: `Bearer ${process.env.OPENAI_BACKUP_API_KEY}` }, model: process.env.OPENAI_BACKUP_MODEL || 'gpt-4.1' }
+  }
+  if (kind === 'vertex') {
     const project = process.env.GOOGLE_CLOUD_PROJECT || serviceAccount().project_id
     const location = process.env.GOOGLE_CLOUD_LOCATION || 'global'
     const host = location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`
@@ -333,7 +342,7 @@ async function target() {
       model: vertexModel(),
     }
   }
-  if (provider() === 'openai') {
+  if (kind === 'openai') {
     const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '')
     return { url: `${base}/chat/completions`, headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}` }, model: process.env.OPENAI_MODEL || 'gpt-4.1' }
   }
@@ -354,9 +363,21 @@ const RETRY_WAITS = [150, 400, 800, 1500, 2500]
 
 /** `extra` is merged into the request (e.g. response_format for the report reader). */
 export async function callModel(messages, extra = {}, timeoutMs = 20_000) {
+  const kind = provider()
+  if (!backupConfigured()) return callOne(kind, messages, extra, timeoutMs, RETRY_WAITS)
+  // With a backup at hand there is no reason to wait on a service that is refusing: one quick retry and half
+  // the time limit, then the backup answers within the rest. The total stays inside the same limit as before.
+  const firstLimit = Math.max(6000, Math.round(timeoutMs / 2))
+  const first = await callOne(kind, messages, extra, firstLimit, RETRY_WAITS.slice(0, 1))
+  if (first.ok || first.filtered) return first
+  const second = await callOne('backup', messages, extra, Math.max(6000, timeoutMs - firstLimit), [])
+  return second.ok || second.filtered ? { ...second, via: 'backup' } : first
+}
+
+async function callOne(kind, messages, extra, timeoutMs, waits) {
   let url, headers, model
   try {
-    ;({ url, headers, model } = await target())
+    ;({ url, headers, model } = await target(kind))
   } catch {
     // The service-account key could not be read or exchanged for a token.
     return { ok: false, status: 502 }
@@ -364,8 +385,9 @@ export async function callModel(messages, extra = {}, timeoutMs = 20_000) {
   // Gemini 3 thinks before answering, and the thinking counts against max_completion_tokens. These tasks are
   // short rewrites and extractions, so thinking is set to minimal (about 2 s a reply instead of 5, and no
   // replies cut off mid-sentence), with headroom in case a higher level is set through AI_REASONING_EFFORT.
-  const vertex = provider() === 'vertex'
-  const effort = process.env.AI_REASONING_EFFORT || process.env.AZURE_OPENAI_REASONING_EFFORT || (vertex ? 'minimal' : '')
+  const vertex = kind === 'vertex'
+  // The backup is a different model family: the main service's reasoning setting does not apply to it.
+  const effort = kind === 'backup' ? process.env.OPENAI_BACKUP_REASONING_EFFORT || '' : process.env.AI_REASONING_EFFORT || process.env.AZURE_OPENAI_REASONING_EFFORT || (vertex ? 'minimal' : '')
   const send = async (withTemperature) => {
     // Generous cap: reasoning models spend part of it thinking. The prompt keeps the visible answer short.
     const payload = { messages, max_completion_tokens: 1500, ...extra }
@@ -392,7 +414,7 @@ export async function callModel(messages, extra = {}, timeoutMs = 20_000) {
     let res = await send(true)
     // Vertex now and then refuses a call outright (403 or 429, within about 0.1 s) and accepts the same call
     // moments later. Try again a few times, a little later each time, before giving up.
-    for (const wait of vertex ? RETRY_WAITS : []) {
+    for (const wait of vertex ? waits : []) {
       if (!RETRY_STATUS.has(res.status)) break
       await new Promise((done) => setTimeout(done, wait))
       res = await send(true)
